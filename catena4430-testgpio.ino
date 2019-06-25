@@ -119,7 +119,7 @@ public:
 
     bool setBlue(bool fOn)  { return this->m_gpio->modify(kBlueMask, fOn ? 0xFF : 0); }
     bool setGreen(bool fOn) { return this->m_gpio->modify(kGreenMask, fOn ? 0xFF : 0); }
-    bool setRed(bool fOn)   { digitalWrite(kRedLed, !fOn); return true; }
+    bool setRed(bool fOn)   { digitalWrite(kRedLed, fOn); return true; }
     bool setDisplay(bool fOn) { digitalWrite(kDisplayLed, fOn); return true; }
 
     bool setVout1(bool fOn) { return this->m_gpio->modify(kVout1Mask, fOn ? 0xFF : 0); }
@@ -142,7 +142,7 @@ bool c4430Gpios::begin()
 
     fResult = this->m_gpio->begin();
 
-    digitalWrite(kRedLed, 1);
+    digitalWrite(kRedLed, 0);
     pinMode(kRedLed, OUTPUT);
 
     digitalWrite(kDisplayLed, 0);
@@ -175,7 +175,7 @@ std::uint8_t c4430Gpios::getLeds()
 
     v = this->m_gpio->get() & (kBlueMask | kGreenMask);
 
-    if (! digitalRead(kRedLed))
+    if (digitalRead(kRedLed))
         v |= kRedMask;
     if (digitalRead(kDisplayLed))
         v |= kDisplayMask;
