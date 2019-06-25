@@ -191,7 +191,7 @@ std::uint8_t c4430Gpios::getLeds()
 
 class cPIRdigital : public McciCatena::cPollableObject
     {
-    static const unsigned getTimeConstant() { return 1000; }
+    static const unsigned getTimeConstant() { return 1000000; }
     static const unsigned kPirData = A0;
 
 public:
@@ -228,6 +228,7 @@ bool cPIRdigital::begin()
     {
     pinMode(this->m_pin, INPUT);
     this->m_value = 0.0;
+    this->m_tLast = micros();
 
     // set up for polling.
     gCatena.registerObject(this);
@@ -236,9 +237,9 @@ bool cPIRdigital::begin()
 void cPIRdigital::poll() /* override */
     {
     auto const v = digitalRead(this->m_pin);
-    std::uint32_t tNow = millis();
+    std::uint32_t tNow = micros();
 
-    float delta = (v ? 1.0f : -1.0f);
+    float delta = v ? 1.0f : -1.0f;
     
     float m = float(tNow - this->m_tLast) / this->getTimeConstant(); 
 
