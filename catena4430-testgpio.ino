@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Catena.h>
+#include <RTClib.h>
 
 extern McciCatena::Catena gCatena;
 
@@ -373,6 +374,8 @@ cTimer pirPrintTimer;
 cTimer ledTimer;
 cPIRdigital pir;
 
+RTC_PCF8523 rtc;
+
 unsigned ledCount;
 
 /****************************************************************************\
@@ -398,6 +401,16 @@ void setup() {
 
     if (! pir.begin())
         Serial.println("PIR failed to initialize");
+
+    if (! rtc.begin())
+        Serial.println("RTC failed to intiailize");
+
+    DateTime now = rtc.now();
+    gCatena.SafePrintf("RTC is %s. Date: %d-%02d-%02d %02d:%02d:%02d\n",
+        rtc.initialized() ? "running" : "not initialized",
+        now.year(), now.month(), now.day(),
+        now.hour(), now.minute(), now.second()
+        );
 
     ledCount = 0;
 }
@@ -429,8 +442,9 @@ void loop() {
     if (pirPrintTimer.isready())
         {
         float v = (pir.read() + 1.0f) / 2.0f;
+        DateTime now = rtc.now();
 
-        Serial.print(millis());
+        gCatena.SafePrintf("%02d:%02d:%02d", now.hour(), now.minute(), now.second());
         Serial.print(" PIR: ");
         Serial.print(v * 100.0f);
         Serial.println("%");
