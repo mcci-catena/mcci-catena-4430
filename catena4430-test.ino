@@ -195,7 +195,9 @@ std::uint8_t c4430Gpios::getLeds()
 
 class cPIRdigital : public McciCatena::cPollableObject
     {
+    // the filtering time-constant, in microseconds.
     static const unsigned getTimeConstant() { return 1000000; }
+    // the digital pin used for the PIR.
     static const unsigned kPirData = A0;
 
 public:
@@ -247,6 +249,10 @@ void cPIRdigital::poll() /* override */
     
     float m = float(tNow - this->m_tLast) / this->getTimeConstant(); 
 
+    // classic FIR filter is g*new + (1-g)*old
+    // and that's what this is, if g is the effective gain.
+    // note that g is adjusted based on the variable sampling
+    // rate so that the overall time constnant is this->getTimeConstant().
     this->m_value = this->m_value + m * (delta  - this->m_value);
 
     if (this->m_value > 1.0f) 
@@ -452,8 +458,10 @@ void setup_flash(void)
 void loop() {
     gCatena.poll();
 
+    // copy current PIR state to the blue LED.
     gpio.setBlue(digitalRead(A0));
 
+    // if it's time to update the LEDs, advance to the next step.
     if (ledTimer.isready())
         {
         const std::uint8_t ledMask = (gpio.kDisplayMask | gpio.kRedMask | gpio.kGreenMask);
@@ -473,11 +481,16 @@ void loop() {
         gpio.setLeds(ledMask, ledValue);
         }
 
+    // if it's tiem to print the PIR state, printit out.
     if (pirPrintTimer.isready())
         {
+        // for some reason, pir.read() returns a value in [-1, 1],
+        // so we first map it to 0 to 1.
         float v = (pir.read() + 1.0f) / 2.0f;
+        // get the current time from the RTC
         DateTime now = rtc.now();
 
+        // print it out.
         gCatena.SafePrintf("%02d:%02d:%02d", now.hour(), now.minute(), now.second());
         Serial.print(" PIR: ");
         Serial.print(v * 100.0f);
