@@ -249,12 +249,13 @@ void cPIRdigital::poll() /* override */
     
     float m = float(tNow - this->m_tLast) / this->getTimeConstant(); 
 
-    // classic FIR filter is g*new + (1-g)*old
-    // and that's what this is, if g is the effective gain.
-    // note that g is adjusted based on the variable sampling
-    // rate so that the overall time constnant is this->getTimeConstant().
+    // The formaula for a classic unity-gain one-pole IIR filter is g*new + (1-g)*old,
+    // and that's what this is, if g is 1-(the effective decay value).
+    // Note that g is adjusted based on the variable sampling
+    // rate so that the overall time constant is this->getTimeConstant().
     this->m_value = this->m_value + m * (delta  - this->m_value);
 
+    // we clamp the output to the range [-1, 1].
     if (this->m_value > 1.0f) 
         this->m_value = 1.0f;
     else if (this->m_value < -1.0f)
@@ -399,7 +400,7 @@ unsigned ledCount;
 
 /****************************************************************************\
 |
-|   Code
+|   Setup
 |
 \****************************************************************************/
 
@@ -454,6 +455,12 @@ void setup_flash(void)
         gCatena.SafePrintf("No FLASH found: check hardware\n");
         }
     }
+
+/****************************************************************************\
+|
+|   Loop
+|
+\****************************************************************************/
 
 void loop() {
     gCatena.poll();
