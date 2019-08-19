@@ -1,3 +1,18 @@
+/*
+
+Module: catean4430-test.ino
+
+Function:
+    Simple test program for the Catena 4430.
+
+Copyright:
+    See accompanying LICENSE file for copyright and license information.
+
+Author:
+    Terry Moore, MCCI Corporation   July 2019
+
+*/
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <Catena.h>
@@ -5,368 +20,14 @@
 #include <RTClib.h>
 #include <SPI.h>
 #include <SD.h>
+#include <Catena_Timer.h>
+#include <Catena4430-cPCA9570.h>
+#include <Catena4430-c4430Gpios.h>
+#include <Catena4430-cPIRdigital.h>
 
 extern McciCatena::Catena gCatena;
+using namespace McciCatena4430;
 
-/****************************************************************************\
-|
-|   PCA9570 I2C output buffer
-|
-\****************************************************************************/
-
-class cPCA9570
-    {
-public:
-    static constexpr std::uint8_t kI2cAddress = 0x24;
-
-private:
-    static constexpr std::uint8_t kActiveBits = 0xF;
-
-public:
-    cPCA9570(TwoWire *pWire) : m_i2caddr(kI2cAddress), m_wire(pWire), m_inversion(0) {};
-
-    bool begin();
-    void end();
-    bool set(std::uint8_t value);
-    bool modify(std::uint8_t mask, std::uint8_t bits);
-    bool setPolarity(std::uint8_t mask)
-        { this->m_inversion = (~mask) & kActiveBits; }
-    std::uint8_t getPolarity() const
-        { return this->m_inversion ^ kActiveBits; }
-    std::uint8_t get() const
-        { return this->m_value & kActiveBits; }
-    bool read(std::uint8_t &value) const;
-
-private:
-    TwoWire *m_wire;
-    std::uint8_t m_i2caddr;
-    std::uint8_t m_value;
-    std::uint8_t m_inversion;
-    };
-
-bool cPCA9570::begin()
-    {
-    this->m_wire->begin();
-
-    return this->set(0);
-    }
-
-void cPCA9570::end()
-    {
-    (void) this->set(0);
-    }
-
-bool cPCA9570::modify(std::uint8_t mask, std::uint8_t bits)
-    {
-    return this->set((this->get() & ~mask) | (bits & mask));
-    }
-
-bool cPCA9570::set(std::uint8_t value)
-    {
-    int error;
-
-    this->m_wire->beginTransmission(this->m_i2caddr);
-    this->m_wire->write((value & kActiveBits) ^ this->m_inversion);
-    error = this->m_wire->endTransmission();
-
-    if (error != 0)
-        return false;
-    else
-        {
-        this->m_value = value & kActiveBits;
-        return true;
-        }
-    }
-
-bool cPCA9570::read(std::uint8_t &value) const
-    {
-    unsigned nRead;
-
-    nRead = this->m_wire->requestFrom(this->m_i2caddr, uint8_t(1));
-
-    if (nRead == 0)
-        return false;
-    else
-        {
-        value = (this->m_wire->read() ^ this->m_inversion) & kActiveBits;
-        return true;
-        }
-    }
-
-/****************************************************************************\
-|
-|   The 4430 GPIO cluster -- I2C GPIOs plus other LEDs
-|
-\****************************************************************************/
-
-class c4430Gpios
-    {
-private:
-    static const unsigned kRedLed = D12;
-    static const unsigned kDisplayLed = D13;
-
-public:
-    static const std::uint8_t kDisplayMask  = (1 << 0);
-    static const std::uint8_t kRedMask      = (1 << 1);
-    static const std::uint8_t kBlueMask     = (1 << 2);
-    static const std::uint8_t kGreenMask    = (1 << 3);
-
-private:
-    static const std::uint8_t kVout1Mask   = (1 << 0);
-    static const std::uint8_t kVout2Mask   = (1 << 1);
-
-public:
-    c4430Gpios(cPCA9570 *pPCA9570) : m_gpio(pPCA9570) {};
-
-    bool begin();
-    void end();
-
-    bool setBlue(bool fOn)  { return this->m_gpio->modify(kBlueMask, fOn ? 0xFF : 0); }
-    bool setGreen(bool fOn) { return this->m_gpio->modify(kGreenMask, fOn ? 0xFF : 0); }
-    bool setRed(bool fOn)   { digitalWrite(kRedLed, fOn); return true; }
-    bool setDisplay(bool fOn) { digitalWrite(kDisplayLed, fOn); return true; }
-
-    bool setVout1(bool fOn) { return this->m_gpio->modify(kVout1Mask, fOn ? 0xFF : 0); }
-    bool getVout1() const   { return this->m_gpio->get() & kVout1Mask; }
-    bool setVsdcard(bool fOn) { return this->m_gpio->modify(kVout2Mask, fOn ? 0xFF : 0); }
-    bool getVsdcard() const { return this->m_gpio->get() & kVout2Mask; }
-
-    bool setLeds(std::uint8_t mask, std::uint8_t v);
-    std::uint8_t getLeds();
-
-private:
-    cPCA9570 *m_gpio;
-    };
-
-bool c4430Gpios::begin()
-    {
-    bool fResult;
-
-    this->m_gpio->setPolarity(this->m_gpio->getPolarity() & ~(kBlueMask | kGreenMask));
-
-    fResult = this->m_gpio->begin();
-
-    digitalWrite(kRedLed, 0);
-    pinMode(kRedLed, OUTPUT);
-
-    digitalWrite(kDisplayLed, 0);
-    pinMode(kDisplayLed, OUTPUT);
-
-    return fResult;
-    }
-
-void c4430Gpios::end()
-    {
-    this->m_gpio->end();
-    }
-
-bool c4430Gpios::setLeds(std::uint8_t mask, std::uint8_t v)
-    {
-    bool fResult = true;
-
-    fResult &= this->m_gpio->modify(mask & (kBlueMask | kGreenMask), v);
-    if (mask & kRedMask)
-        fResult &= this->setRed(v & kRedMask);
-    if (mask & kDisplayMask)
-        fResult &= this->setDisplay(v & kDisplayMask);
-
-    return fResult;
-    }
-
-std::uint8_t c4430Gpios::getLeds()
-    {
-    std::uint8_t v;
-
-    v = this->m_gpio->get() & (kBlueMask | kGreenMask);
-
-    if (digitalRead(kRedLed))
-        v |= kRedMask;
-    if (digitalRead(kDisplayLed))
-        v |= kDisplayMask;
-
-    return v;
-    }
-
-/****************************************************************************\
-|
-|   A simple PIR library -- this uses cPollableObject because it's easier
-|
-\****************************************************************************/
-
-class cPIRdigital : public McciCatena::cPollableObject
-    {
-    // the filtering time-constant, in microseconds.
-    static const unsigned getTimeConstant() { return 1000000; }
-    // the digital pin used for the PIR.
-    static const unsigned kPirData = A0;
-
-public:
-    // constructor
-    cPIRdigital(int pin = kPirData) 
-        : m_pin(pin)
-        { }
-
-    // neither copyable nor movable 
-    cPIRdigital(const cPIRdigital&) = delete;
-    cPIRdigital& operator=(const cPIRdigital&) = delete;
-    cPIRdigital(const cPIRdigital&&) = delete;
-    cPIRdigital& operator=(const cPIRdigital&&) = delete;
-
-    // initialze
-    bool begin();
-
-    // stop operation
-    void end();
-
-    // poll function (updates data)
-    virtual void poll() override;
-
-    // get a reading
-    float read();
-
-private:
-    unsigned m_pin;
-    std::uint32_t m_tLast;
-    float m_value;
-    };
-
-bool cPIRdigital::begin()
-    {
-    pinMode(this->m_pin, INPUT);
-    this->m_value = 0.0;
-    this->m_tLast = micros();
-
-    // set up for polling.
-    gCatena.registerObject(this);
-    }
-
-void cPIRdigital::poll() /* override */
-    {
-    auto const v = digitalRead(this->m_pin);
-    std::uint32_t tNow = micros();
-
-    float delta = v ? 1.0f : -1.0f;
-    
-    float m = float(tNow - this->m_tLast) / this->getTimeConstant(); 
-
-    // The formaula for a classic unity-gain one-pole IIR filter is g*new + (1-g)*old,
-    // and that's what this is, if g is 1-(the effective decay value).
-    // Note that g is adjusted based on the variable sampling
-    // rate so that the overall time constant is this->getTimeConstant().
-    this->m_value = this->m_value + m * (delta  - this->m_value);
-
-    // we clamp the output to the range [-1, 1].
-    if (this->m_value > 1.0f) 
-        this->m_value = 1.0f;
-    else if (this->m_value < -1.0f)
-        this->m_value = -1.0f;
-
-    this->m_tLast = tNow;
-    }
-
-float cPIRdigital::read()
-    {
-    return this->m_value;
-    }
-
-/****************************************************************************\
-|
-|   A simple timer -- this uses cPollableObject because it's easier
-|
-\****************************************************************************/
-
-class cTimer : public McciCatena::cPollableObject
-    {
-public:
-    // constructor
-    cTimer() {}
-
-    // neither copyable nor movable 
-    cTimer(const cTimer&) = delete;
-    cTimer& operator=(const cTimer&) = delete;
-    cTimer(const cTimer&&) = delete;
-    cTimer& operator=(const cTimer&&) = delete;
-
-    // initialze to fire every nMillis
-    bool begin(std::uint32_t nMillis);
-
-    // stop operation
-    void end();
-
-    // poll function (updates data)
-    virtual void poll() override;
-
-    bool isready();
-    std::uint32_t readTicks();
-    std::uint32_t peekTicks() const;
-
-    void debugDisplay() const
-        {
-        Serial.print("time="); Serial.print(this->m_time);
-        Serial.print(" interval="); Serial.print(this->m_interval);
-        Serial.print(" events="); Serial.print(this->m_events);
-        Serial.print(" overrun="); Serial.println(this->m_overrun); 
-        }
-
-private:
-    std::uint32_t   m_time;
-    std::uint32_t   m_interval;
-    std::uint32_t   m_events;
-    std::uint32_t   m_overrun;
-    };
-
-bool cTimer::begin(std::uint32_t nMillis)
-    {
-    this->m_interval = nMillis;
-    this->m_time = millis();
-    this->m_events = 0;
-
-    // set up for polling.
-    gCatena.registerObject(this);
-
-    return true;
-    }
-
-void cTimer::poll() /* override */
-    {
-    auto const tNow = millis();
-
-    if (tNow - this->m_time >= this->m_interval)
-        {
-        this->m_time += this->m_interval;
-        ++this->m_events;
-
-        /* if this->m_time is now in the future, we're done */
-        if (std::int32_t(tNow - this->m_time) < std::int32_t(this->m_interval))
-            return;
-
-        // rarely, we need to do arithmetic. time and events are in sync.
-        // arrange for m_time to be greater than tNow, and adjust m_events
-        // accordingly. 
-        std::uint32_t const tDiff = tNow - this->m_time;
-        std::uint32_t const nTicks = tDiff / this->m_interval;
-        this->m_events += nTicks;
-        this->m_time += nTicks * this->m_interval;
-        this->m_overrun += nTicks;
-        }
-    }
-
-bool cTimer::isready()
-    {
-    return this->readTicks() != 0;
-    }
-
-std::uint32_t cTimer::readTicks()
-    {
-    auto const result = this->m_events;
-    this->m_events = 0;
-    return result; 
-    }
-
-std::uint32_t cTimer::peekTicks() const
-    {
-    return this->m_events;
-    }
 
 /****************************************************************************\
 |
@@ -420,7 +81,7 @@ void setup() {
     pirPrintTimer.begin(2000);
     ledTimer.begin(200);
 
-    if (! pir.begin())
+    if (! pir.begin(gCatena))
         Serial.println("PIR failed to initialize");
 
     if (! rtc.begin())
@@ -488,7 +149,7 @@ void loop() {
         gpio.setLeds(ledMask, ledValue);
         }
 
-    // if it's tiem to print the PIR state, printit out.
+    // if it's time to print the PIR state, print it out.
     if (pirPrintTimer.isready())
         {
         // for some reason, pir.read() returns a value in [-1, 1],

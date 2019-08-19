@@ -16,7 +16,7 @@ The Catena 4430 adds the following functions to any compatible Feather-like boar
 
 - A battery-backed real-time clock (compatible with Adafruit's [Adalogger FeatherWing](https://www.adafruit.com/product/2922)).
 
-- An SD-card slot similar to the Adalogger, but different in a couple of ways. First the SD-card is electrically buffered going to and from the system; it can't interfere with the SPI bus when you're not usin git. Second, the SD-card slot has a dedicated power supply that is off by default.
+- An SD-card slot similar to the Adalogger, but different in a couple of ways. First the SD-card is electrically buffered going to and from the system; it can't interfere with the SPI bus when you're not using it. Second, the SD-card slot has a dedicated power supply that is off by default.
 
 - Three additional lights (red, green, and blue).
 
@@ -34,9 +34,9 @@ This sketch has the following features.
 
 - The sketch flashes the Arduino standard LED (D13), the red LED on the 4430, and the green LED on the 4430. It does this in a circular chasing pattern.
 
-- The sketch uses the [Catena Arduino Platform](https://github.com/mcci-catena/Catena-Arduino-Platform.git), and therefore the basic provisioning commands from the platform are always availble while the sketch is running. This also allows user commands to be added if desired.
+- The sketch uses the [Catena Arduino Platform](https://github.com/mcci-catena/Catena-Arduino-Platform.git), and therefore the basic provisioning commands from the platform are always available while the sketch is running. This also allows user commands to be added if desired.
 
-- Futhermore, the `McciCatena::cPollableObject` paradigm is used to simplify the coordination of the activities described above.
+- Furthermore, the `McciCatena::cPollableObject` paradigm is used to simplify the coordination of the activities described above.
 
 ## Key classes
 
@@ -46,7 +46,7 @@ This class models the hardware of PCA9570 I2C GPIO expander. It has no knowledge
 
 ### `c4430Gpios` Catena 4430 GPIO Control
 
-This class models the GPIOs of the Catena 4430. It understands the wiring and polarities so that clientscan use method like `c4330Gpios::setBlue()` to turn on the blue LED.
+This class models the GPIOs of the Catena 4430. It understands the wiring and polarities so that clients can use method like `c4330Gpios::setBlue()` to turn on the blue LED.
 
 ### `cPIRdigital` PIR monitor class
 
@@ -54,5 +54,4 @@ This class monitors the digital output from the PIR and accumulates an activity 
 
 ### `cTimer` simple periodic timer class
 
-This class simplifies the coding of periodic events driven from the Aduino `loop()` routine.
-
+This class simplifies the coding of periodic events driven from the Arduino `loop()` routine.
