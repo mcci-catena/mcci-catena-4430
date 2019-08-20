@@ -1,1 +1,7 @@
 .vscode
+# test-vector artifacts for Windows
+extra/*.exe
+extra/*.obj
+# execution artifacts for macOS or Linux
+extra/catena-message-port1-format-21-test
+extra/*.o
