@@ -1,3 +1,18 @@
+/*
+
+Name:   catena-message-port1-format-21-test.cpp
+
+Function:
+    Generate test vectors for port 0x01 format 0x21 messages.
+
+Copyright and License:
+    See accompanying LICENSE file at https://github.com/mcci-catena/MCCI-Catena-4430/
+
+Author:
+    Terry Moore, MCCI Corporation   August 2019
+
+*/
+
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -401,7 +416,7 @@ int main(int argc, char **argv)
     Measurements m0 {0};
     bool fAny;
 
-    std::cout << "Input a line with name/values pairs\n";
+    std::cout << "Input one or more lines of name/value tuples, ended by '.'\n";
 
     fAny = false;
     while (std::cin.good())
