@@ -15,6 +15,8 @@ Author:
 
 #include "Catena4430_cMeasurementLoop.h"
 
+#include <arduino_lmic.h>
+
 using namespace McciCatena4430;
 
 /****************************************************************************\
@@ -375,9 +377,9 @@ void cMeasurementLoop::fillTxBuffer(cMeasurementLoop::TxBuffer_t& b)
                 500 + int(500 * aAvg)
                 );
 
-        b.put2sf(aAvg);
-        b.put2sf(aMin);
-        b.put2sf(aMax);
+        b.put2uf(LMIC_f2sflt16(aAvg));
+        b.put2uf(LMIC_f2sflt16(aMin));
+        b.put2uf(LMIC_f2sflt16(aMax));
         }
 
     gLed.Set(savedLed);
