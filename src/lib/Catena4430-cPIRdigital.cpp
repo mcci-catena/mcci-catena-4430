@@ -32,11 +32,16 @@ bool cPIRdigital::begin(McciCatena::CatenaBase& rCatena)
 
 void cPIRdigital::poll() /* override */
     {
+    // these two lines take the measurement.
     auto const v = digitalRead(this->m_pin);
     std::uint32_t tNow = micros();
 
+    // this is for outsiders reference
+    this->m_tLastMs = millis();
+
+    // now compute the result
     float delta = v ? 1.0f : -1.0f;
-    
+
     float m = float(tNow - this->m_tLast) / this->getTimeConstant(); 
 
     // The formaula for a classic unity-gain one-pole IIR filter is g*new + (1-g)*old,
@@ -56,5 +61,11 @@ void cPIRdigital::poll() /* override */
 
 float cPIRdigital::read()
     {
+    return this->m_value;
+    }
+
+float cPIRdigital::readWithTime(std::uint32_t& lastMs)
+    {
+    lastMs = this->m_tLastMs;
     return this->m_value;
     }

@@ -152,7 +152,8 @@ void loop() {
     // if it's time to print the PIR state, print it out.
     if (pirPrintTimer.isready())
         {
-        // for some reason, pir.read() returns a value in [-1, 1],
+        // for reaons having to do with rouding and symmetry, pir.read()
+	// returns a value in [-1, 1],
         // so we first map it to 0 to 1.
         float v = (pir.read() + 1.0f) / 2.0f;
         // get the current time from the RTC

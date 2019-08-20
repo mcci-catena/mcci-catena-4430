@@ -1,6 +1,6 @@
 # MCCI-Catena-4430 library
 
-This library provides Arduino support for the MCCI <!-- spellcheck:off -->Catena&reg;<!-- spellcheck:on --> 4430 Feather Wing.
+This library provides Arduino support for the MCCI Catena&reg; 4430 Feather Wing.
 
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-capture -->
@@ -13,6 +13,10 @@ This library provides Arduino support for the MCCI <!-- spellcheck:off -->Catena
 	- [`c4430Gpios` Catena 4430 GPIO Control](#c4430gpios-catena-4430-gpio-control)
 	- [`cPIRdigital` PIR monitor class](#cpirdigital-pir-monitor-class)
 	- [`cTimer` simple periodic timer class](#ctimer-simple-periodic-timer-class)
+- [Meta](#meta)
+	- [License](#license)
+	- [Support Open Source Hardware and Software](#support-open-source-hardware-and-software)
+	- [Trademarks](#trademarks)
 
 <!-- /TOC -->
 <!-- markdownlint-restore -->
@@ -59,3 +63,19 @@ This class monitors the digital output from the PIR and accumulates an activity 
 ### `cTimer` simple periodic timer class
 
 This class simplifies the coding of periodic events driven from the Arduino `loop()` routine.
+
+## Meta
+
+### License
+
+This repository is released under the [MIT](./LICENSE) license. Commercial licenses are also available from MCCI Corporation.
+
+### Support Open Source Hardware and Software
+
+MCCI invests time and resources providing this open source code, please support MCCI and open-source hardware by purchasing products from MCCI, Adafruit and other open-source hardware/software vendors!
+
+For information about MCCI's products, please visit [store.mcci.com](https://store.mcci.com/).
+
+### Trademarks
+
+MCCI and MCCI Catena are registered trademarks of MCCI Corporation. LoRaWAN is a registered trademark of the LoRa Alliance. LoRa is a registered trademark of Semtech Corporation. All other marks are the property of their respective owners.

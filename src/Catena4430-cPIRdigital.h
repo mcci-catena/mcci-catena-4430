@@ -71,6 +71,9 @@ public:
     // get a reading
     float read();
 
+    // get a reading and a time
+    float readWithTime(std::uint32_t &lastMs);
+
     //*******************************************
     // The instance data
     //*******************************************
@@ -79,6 +82,8 @@ private:
     unsigned m_pin;
     // last time measured (in micros)
     std::uint32_t m_tLast;
+    // last time measured (in millis)
+    std::uint32_t m_tLastMs;
     // the running value.
     float m_value;
     };
