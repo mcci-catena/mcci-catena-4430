@@ -15,7 +15,7 @@ This library provides Arduino support for the MCCI Catena&reg; 4430 Feather Wing
 	- [`cTimer` simple periodic timer class](#ctimer-simple-periodic-timer-class)
 - [Integration with Catena 4610](#integration-with-catena-4610)
 - [Example Sketches](#example-sketches)
-- [Additional code for dashboards](#additional-code-for-dashboards)
+- [Additional material](#additional-material)
 - [Meta](#meta)
 	- [License](#license)
 	- [Support Open Source Hardware and Software](#support-open-source-hardware-and-software)
@@ -79,13 +79,13 @@ The Catena 4610 has the following features.
 
 ## Example Sketches
 
-The `catena4630-pm7003-demo` example sketch allows interactive use of the PMS7003.
+The [`catena4430-test`](examples/catena4430-test/catena4430-test.ino) example sketch tests various features of the Catena 4430.
 
-The `catena4630-pm7003-lora` example is a completely worked remote sensor sketch with power management.
+The [`Catena4430_Sensor`](examples/Catena4430_Sensor/Catena4430_Sensor.ino) example is a completely worked remote sensor sketch with power management.
 
-## Additional code for dashboards
+## Additional material
 
-Check the [extra](./extra) directory for information about decoding data from LoRaWAN messages, and Node-RED and Grafana assets for presenting the data using the [docker-ttn-dashboard](https://github.com/mcci-catena/docker-ttn-dashboard).
+Check the [extra](./extra) directory for information about [decoding data from LoRaWAN messages](./extra/catena-message-port1-format-21.md), JavaScript decoding scripts for [The Things Network Console](extra/catena-message-port1-format-21-decoder-ttn.js) and [Node-RED](extra/catena-message-port1-format-21-decoder-node-red.js), and complete Node-RED [flows](extra/wakefield-nodered-flow.json) and [Grafana dashboards](extra/washington-university-catena4430-grafana.json) for saving and presenting the data using the MCCI Catena [`docker-ttn-dashboard`](https://github.com/mcci-catena/docker-ttn-dashboard).
 
 ## Meta
 
