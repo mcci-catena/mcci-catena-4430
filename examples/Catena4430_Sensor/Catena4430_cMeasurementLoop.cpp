@@ -250,6 +250,7 @@ void cMeasurementLoop::updateSynchronousMeasurements()
     this->m_data.activity.Avg = this->m_pirSum / tDelta;
     this->m_data.activity.Max = this->m_pirMax;
     this->m_data.activity.Min = this->m_pirMin;
+    this->m_data.flags |= Flags::Activity;
     }
 
 void cMeasurementLoop::updateLightMeasurements()
@@ -271,6 +272,7 @@ void cMeasurementLoop::resetPirAccumulation()
     this->m_pirMin = 1.0f;
     this->m_pirSum = 0.0f;
     this->m_pirBaseTimeMs = millis();
+    this->m_pirLastTimeMs = this->m_pirBaseTimeMs;
     }
 
 void cMeasurementLoop::accumulatePirData()
@@ -367,10 +369,10 @@ void cMeasurementLoop::fillTxBuffer(cMeasurementLoop::TxBuffer_t& b)
         float aAvg = this->m_data.activity.Avg;
 
         gCatena.SafePrintf(
-                "Activity [0..1000]:  %d min %d max %d Avg\n",
-                int(500 * aMin), 
-                int(500 * aMax),
-                int(500 * aAvg)
+                "Activity [0..1000):  %d min %d max %d Avg\n",
+                500 + int(500 * aMin), 
+                500 + int(500 * aMax),
+                500 + int(500 * aAvg)
                 );
 
         b.put2sf(aAvg);

@@ -76,6 +76,7 @@ void setup()
     setup_rtc();
     setup_radio();
     setup_commands();
+    setup_start();
     }
 
 void setup_platform()
@@ -186,6 +187,17 @@ void setup_measurement()
 void setup_commands()
     {
     // none yet.  Add commands for setting clock, etc.
+    }
+
+void setup_start()
+    {
+    if (gLoRaWAN.IsProvisioned())
+        gMeasurementLoop.requestActive(true);
+    else
+        {
+        gCatena.SafePrintf("not provisioned, idling\n");
+        gMeasurementLoop.requestActive(false);
+        }
     }
 
 /****************************************************************************\
