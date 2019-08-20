@@ -13,6 +13,9 @@ This library provides Arduino support for the MCCI Catena&reg; 4430 Feather Wing
 	- [`c4430Gpios` Catena 4430 GPIO Control](#c4430gpios-catena-4430-gpio-control)
 	- [`cPIRdigital` PIR monitor class](#cpirdigital-pir-monitor-class)
 	- [`cTimer` simple periodic timer class](#ctimer-simple-periodic-timer-class)
+- [Integration with Catena 4610](#integration-with-catena-4610)
+- [Example Sketches](#example-sketches)
+- [Additional code for dashboards](#additional-code-for-dashboards)
 - [Meta](#meta)
 	- [License](#license)
 	- [Support Open Source Hardware and Software](#support-open-source-hardware-and-software)
@@ -63,6 +66,26 @@ This class monitors the digital output from the PIR and accumulates an activity 
 ### `cTimer` simple periodic timer class
 
 This class simplifies the coding of periodic events driven from the Arduino `loop()` routine.
+
+## Integration with Catena 4610
+
+The Catena 4610 has the following features.
+
+- LoRaWAN-compatible radio and software
+
+- Bosch BME280 temperature/humidity/pressure sensor
+
+- Silicon Labs Si1133 ambient light sensor
+
+## Example Sketches
+
+The `catena4630-pm7003-demo` example sketch allows interactive use of the PMS7003.
+
+The `catena4630-pm7003-lora` example is a completely worked remote sensor sketch with power management.
+
+## Additional code for dashboards
+
+Check the [extra](./extra) directory for information about decoding data from LoRaWAN messages, and Node-RED and Grafana assets for presenting the data using the [docker-ttn-dashboard](https://github.com/mcci-catena/docker-ttn-dashboard).
 
 ## Meta
 
