@@ -86,6 +86,8 @@ private:
     std::uint32_t m_tLastMs;
     // the running value.
     float m_value;
+    // are we registered?
+    bool m_fRegistered;
     };
 
 } // namespace McciCatena4430

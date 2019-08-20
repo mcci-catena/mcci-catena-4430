@@ -67,18 +67,83 @@ unsigned ledCount;
 
 void setup()
     {
-    Wire.begin();
-    Serial.begin(115200);
-    while (! Serial)
-        delay(1);
-    Serial.println("\n" "Catena4430_Sensor");
+    setup_platform();
+    setup_printSignOn();
 
-    gCatena.begin();
     setup_flash();
+    setup_measurement();
+    setup_gpio();
+    setup_rtc();
+    setup_radio();
+    setup_commands();
+    }
 
+void setup_platform()
+    {
+    gCatena.begin();
+
+    // if running unattended, don't wait for USB connect.
+    if (! (gCatena.GetOperatingFlags() &
+            static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+            {
+            while (!Serial)
+                    /* wait for USB attach */
+                    yield();
+            }
+    }
+
+static constexpr const char *filebasename(const char *s)
+    {
+    const char *pName = s;
+
+    for (auto p = s; *p != '\0'; ++p)
+        {
+        if (*p == '/' || *p == '\\')
+            pName = p + 1;
+        }
+    return pName;
+    }
+
+void setup_printSignOn()
+    {
+    static const char dashes[] = "------------------------------------";
+
+    gCatena.SafePrintf("\n%s%s\n", dashes, dashes);
+
+    gCatena.SafePrintf("This is %s.\n", filebasename(__FILE__));
+        {
+        char sRegion[16];
+        gCatena.SafePrintf("Target network: %s / %s\n",
+                        gLoRaWAN.GetNetworkName(),
+                        gLoRaWAN.GetRegionString(sRegion, sizeof(sRegion))
+                        );
+        }
+
+    gCatena.SafePrintf("System clock rate is %u.%03u MHz\n",
+        ((unsigned)gCatena.GetSystemClockRate() / (1000*1000)),
+        ((unsigned)gCatena.GetSystemClockRate() / 1000 % 1000)
+        );
+    gCatena.SafePrintf("Enter 'help' for a list of commands.\n");
+    gCatena.SafePrintf("(remember to select 'Line Ending: Newline' at the bottom of the monitor window.)\n");
+
+    gCatena.SafePrintf("%s%s\n" "\n", dashes, dashes);
+    }
+
+void setup_gpio()
+    {
     if (! gpio.begin())
         Serial.println("GPIO failed to initialize");
 
+    ledTimer.begin(400);
+
+    // set up the LED
+    gLed.begin();
+    gCatena.registerObject(&gLed);
+    gLed.Set(LedPattern::FastFlash);
+    }
+
+void setup_rtc()
+    {
     if (! rtc.begin())
         Serial.println("RTC failed to intiailize");
 
@@ -88,14 +153,6 @@ void setup()
         now.year(), now.month(), now.day(),
         now.hour(), now.minute(), now.second()
         );
-
-    /* set up the radio */
-    setup_radio();
-
-    /* set up the measurement loop */
-    setup_measurement();
-
-    ledCount = 0;
     }
 
 void setup_flash(void)
@@ -124,6 +181,11 @@ void setup_radio()
 void setup_measurement()
     {
     gMeasurementLoop.begin();
+    }
+
+void setup_commands()
+    {
+    // none yet.  Add commands for setting clock, etc.
     }
 
 /****************************************************************************\

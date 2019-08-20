@@ -36,6 +36,9 @@ void cMeasurementLoop::begin()
         this->m_pirSampleTimer.begin(this->m_pirSampleSec * 1000);
         }
 
+    // start and initialize the PIR sensor
+    this->m_pir.begin(gCatena);
+
     Wire.begin();
     if (this->m_BME280.begin(BME280_ADDRESS, Adafruit_BME280::OPERATING_MODE::Sleep))
         {

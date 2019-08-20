@@ -27,7 +27,11 @@ bool cPIRdigital::begin(McciCatena::CatenaBase& rCatena)
     this->m_tLast = micros();
 
     // set up for polling.
-    rCatena.registerObject(this);
+    if (! this->m_fRegistered)
+        {
+        this->m_fRegistered = true;
+        rCatena.registerObject(this);
+        }
     }
 
 void cPIRdigital::poll() /* override */
