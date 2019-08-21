@@ -16,7 +16,7 @@
 	"gnetId": null,
 	"graphTooltip": 0,
 	"id": 31,
-	"iteration": 1566337016398,
+	"iteration": 1566339889169,
 	"links": [],
 	"panels": [
 	  {
@@ -32,7 +32,7 @@
 	    "repeat": "Sensors",
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -94,7 +94,7 @@
 	    ],
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -234,7 +234,7 @@
 	    ],
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -366,7 +366,7 @@
 	    "pluginVersion": "6.1.6",
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -485,7 +485,7 @@
 	    ],
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -620,7 +620,7 @@
 	    ],
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -744,7 +744,7 @@
 	    ],
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -868,7 +868,7 @@
 	    "rangeMaps": [],
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -978,7 +978,7 @@
 	    "renderer": "flot",
 	    "scopedVars": {
 	      "Sensors": {
-		"selected": true,
+		"selected": false,
 		"text": "wustl-activity.wakefield-0002cc0100000360",
 		"value": "wustl-activity.wakefield-0002cc0100000360"
 	      }
@@ -1204,12 +1204,256 @@
 	    "dashLength": 10,
 	    "dashes": false,
 	    "datasource": "wustl_activity_db",
-	    "fill": 1,
+	    "fill": 0,
 	    "gridPos": {
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
 	      "y": 7
+	    },
+	    "id": 112,
+	    "legend": {
+	      "avg": false,
+	      "current": false,
+	      "max": false,
+	      "min": false,
+	      "show": true,
+	      "total": false,
+	      "values": false
+	    },
+	    "lines": true,
+	    "linewidth": 1,
+	    "links": [],
+	    "nullPointMode": "null",
+	    "paceLength": 10,
+	    "percentage": false,
+	    "pointradius": 5,
+	    "points": false,
+	    "renderer": "flot",
+	    "seriesOverrides": [],
+	    "spaceLength": 10,
+	    "stack": false,
+	    "steppedLine": false,
+	    "targets": [
+	      {
+		"alias": "Avg ($tag_displayName)",
+		"groupBy": [
+		  {
+		    "params": [
+		      "$__interval"
+		    ],
+		    "type": "time"
+		  },
+		  {
+		    "params": [
+		      "displayName"
+		    ],
+		    "type": "tag"
+		  },
+		  {
+		    "params": [
+		      "none"
+		    ],
+		    "type": "fill"
+		  }
+		],
+		"measurement": "ActivityData",
+		"orderByTime": "ASC",
+		"policy": "default",
+		"refId": "A",
+		"resultFormat": "time_series",
+		"select": [
+		  [
+		    {
+		      "params": [
+			"activity.Avg"
+		      ],
+		      "type": "field"
+		    },
+		    {
+		      "params": [],
+		      "type": "mean"
+		    },
+		    {
+		      "params": [
+			"* 50 + 50"
+		      ],
+		      "type": "math"
+		    }
+		  ]
+		],
+		"tags": [
+		  {
+		    "key": "displayName",
+		    "operator": "=~",
+		    "value": "/^$Sensors$/"
+		  }
+		]
+	      },
+	      {
+		"alias": "Min ($tag_displayName)",
+		"groupBy": [
+		  {
+		    "params": [
+		      "$__interval"
+		    ],
+		    "type": "time"
+		  },
+		  {
+		    "params": [
+		      "displayName"
+		    ],
+		    "type": "tag"
+		  },
+		  {
+		    "params": [
+		      "none"
+		    ],
+		    "type": "fill"
+		  }
+		],
+		"measurement": "ActivityData",
+		"orderByTime": "ASC",
+		"policy": "default",
+		"refId": "B",
+		"resultFormat": "time_series",
+		"select": [
+		  [
+		    {
+		      "params": [
+			"activity.Min"
+		      ],
+		      "type": "field"
+		    },
+		    {
+		      "params": [],
+		      "type": "mean"
+		    },
+		    {
+		      "params": [
+			"* 50 + 50"
+		      ],
+		      "type": "math"
+		    }
+		  ]
+		],
+		"tags": [
+		  {
+		    "key": "displayName",
+		    "operator": "=~",
+		    "value": "/^$Sensors$/"
+		  }
+		]
+	      },
+	      {
+		"alias": "Max ($tag_displayName)",
+		"groupBy": [
+		  {
+		    "params": [
+		      "$__interval"
+		    ],
+		    "type": "time"
+		  },
+		  {
+		    "params": [
+		      "displayName"
+		    ],
+		    "type": "tag"
+		  },
+		  {
+		    "params": [
+		      "none"
+		    ],
+		    "type": "fill"
+		  }
+		],
+		"measurement": "ActivityData",
+		"orderByTime": "ASC",
+		"policy": "default",
+		"refId": "C",
+		"resultFormat": "time_series",
+		"select": [
+		  [
+		    {
+		      "params": [
+			"activity.Max"
+		      ],
+		      "type": "field"
+		    },
+		    {
+		      "params": [],
+		      "type": "mean"
+		    },
+		    {
+		      "params": [
+			"* 50 + 50"
+		      ],
+		      "type": "math"
+		    }
+		  ]
+		],
+		"tags": [
+		  {
+		    "key": "displayName",
+		    "operator": "=~",
+		    "value": "/^$Sensors$/"
+		  }
+		]
+	      }
+	    ],
+	    "thresholds": [],
+	    "timeFrom": null,
+	    "timeRegions": [],
+	    "timeShift": null,
+	    "title": "Activity",
+	    "tooltip": {
+	      "shared": true,
+	      "sort": 0,
+	      "value_type": "individual"
+	    },
+	    "type": "graph",
+	    "xaxis": {
+	      "buckets": null,
+	      "mode": "time",
+	      "name": null,
+	      "show": true,
+	      "values": []
+	    },
+	    "yaxes": [
+	      {
+		"format": "short",
+		"label": null,
+		"logBase": 1,
+		"max": null,
+		"min": null,
+		"show": true
+	      },
+	      {
+		"format": "short",
+		"label": null,
+		"logBase": 1,
+		"max": null,
+		"min": null,
+		"show": false
+	      }
+	    ],
+	    "yaxis": {
+	      "align": false,
+	      "alignLevel": null
+	    }
+	  },
+	  {
+	    "aliasColors": {},
+	    "bars": false,
+	    "dashLength": 10,
+	    "dashes": false,
+	    "datasource": "wustl_activity_db",
+	    "fill": 1,
+	    "gridPos": {
+	      "h": 8,
+	      "w": 24,
+	      "x": 0,
+	      "y": 15
 	    },
 	    "id": 40,
 	    "legend": {
@@ -1343,7 +1587,7 @@
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
-	      "y": 15
+	      "y": 23
 	    },
 	    "id": 325,
 	    "legend": {
@@ -1477,7 +1721,7 @@
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
-	      "y": 23
+	      "y": 31
 	    },
 	    "id": 178,
 	    "legend": {
@@ -1611,7 +1855,7 @@
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
-	      "y": 31
+	      "y": 39
 	    },
 	    "id": 65,
 	    "legend": {
@@ -1739,7 +1983,7 @@
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
-	      "y": 39
+	      "y": 47
 	    },
 	    "id": 89,
 	    "legend": {
@@ -1970,7 +2214,7 @@
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
-	      "y": 47
+	      "y": 55
 	    },
 	    "id": 88,
 	    "legend": {
@@ -2098,7 +2342,7 @@
 	      "h": 8,
 	      "w": 24,
 	      "x": 0,
-	      "y": 55
+	      "y": 63
 	    },
 	    "id": 111,
 	    "legend": {
@@ -2195,250 +2439,6 @@
 	    "yaxes": [
 	      {
 		"format": "pressurehpa",
-		"label": null,
-		"logBase": 1,
-		"max": null,
-		"min": null,
-		"show": true
-	      },
-	      {
-		"format": "short",
-		"label": null,
-		"logBase": 1,
-		"max": null,
-		"min": null,
-		"show": false
-	      }
-	    ],
-	    "yaxis": {
-	      "align": false,
-	      "alignLevel": null
-	    }
-	  },
-	  {
-	    "aliasColors": {},
-	    "bars": false,
-	    "dashLength": 10,
-	    "dashes": false,
-	    "datasource": "wustl_activity_db",
-	    "fill": 0,
-	    "gridPos": {
-	      "h": 8,
-	      "w": 24,
-	      "x": 0,
-	      "y": 63
-	    },
-	    "id": 112,
-	    "legend": {
-	      "avg": false,
-	      "current": false,
-	      "max": false,
-	      "min": false,
-	      "show": true,
-	      "total": false,
-	      "values": false
-	    },
-	    "lines": true,
-	    "linewidth": 1,
-	    "links": [],
-	    "nullPointMode": "null",
-	    "paceLength": 10,
-	    "percentage": false,
-	    "pointradius": 5,
-	    "points": false,
-	    "renderer": "flot",
-	    "seriesOverrides": [],
-	    "spaceLength": 10,
-	    "stack": false,
-	    "steppedLine": false,
-	    "targets": [
-	      {
-		"alias": "Avg ($tag_displayName)",
-		"groupBy": [
-		  {
-		    "params": [
-		      "$__interval"
-		    ],
-		    "type": "time"
-		  },
-		  {
-		    "params": [
-		      "displayName"
-		    ],
-		    "type": "tag"
-		  },
-		  {
-		    "params": [
-		      "none"
-		    ],
-		    "type": "fill"
-		  }
-		],
-		"measurement": "ActivityData",
-		"orderByTime": "ASC",
-		"policy": "default",
-		"refId": "A",
-		"resultFormat": "time_series",
-		"select": [
-		  [
-		    {
-		      "params": [
-			"activity.Avg"
-		      ],
-		      "type": "field"
-		    },
-		    {
-		      "params": [],
-		      "type": "mean"
-		    },
-		    {
-		      "params": [
-			"* 50 + 50"
-		      ],
-		      "type": "math"
-		    }
-		  ]
-		],
-		"tags": [
-		  {
-		    "key": "displayName",
-		    "operator": "=~",
-		    "value": "/^$Sensors$/"
-		  }
-		]
-	      },
-	      {
-		"alias": "Min ($tag_displayName)",
-		"groupBy": [
-		  {
-		    "params": [
-		      "$__interval"
-		    ],
-		    "type": "time"
-		  },
-		  {
-		    "params": [
-		      "displayName"
-		    ],
-		    "type": "tag"
-		  },
-		  {
-		    "params": [
-		      "none"
-		    ],
-		    "type": "fill"
-		  }
-		],
-		"measurement": "ActivityData",
-		"orderByTime": "ASC",
-		"policy": "default",
-		"refId": "B",
-		"resultFormat": "time_series",
-		"select": [
-		  [
-		    {
-		      "params": [
-			"activity.Min"
-		      ],
-		      "type": "field"
-		    },
-		    {
-		      "params": [],
-		      "type": "mean"
-		    },
-		    {
-		      "params": [
-			"* 50 + 50"
-		      ],
-		      "type": "math"
-		    }
-		  ]
-		],
-		"tags": [
-		  {
-		    "key": "displayName",
-		    "operator": "=~",
-		    "value": "/^$Sensors$/"
-		  }
-		]
-	      },
-	      {
-		"alias": "Max ($tag_displayName)",
-		"groupBy": [
-		  {
-		    "params": [
-		      "$__interval"
-		    ],
-		    "type": "time"
-		  },
-		  {
-		    "params": [
-		      "displayName"
-		    ],
-		    "type": "tag"
-		  },
-		  {
-		    "params": [
-		      "none"
-		    ],
-		    "type": "fill"
-		  }
-		],
-		"measurement": "ActivityData",
-		"orderByTime": "ASC",
-		"policy": "default",
-		"refId": "C",
-		"resultFormat": "time_series",
-		"select": [
-		  [
-		    {
-		      "params": [
-			"activity.Max"
-		      ],
-		      "type": "field"
-		    },
-		    {
-		      "params": [],
-		      "type": "mean"
-		    },
-		    {
-		      "params": [
-			"* 50 + 50"
-		      ],
-		      "type": "math"
-		    }
-		  ]
-		],
-		"tags": [
-		  {
-		    "key": "displayName",
-		    "operator": "=~",
-		    "value": "/^$Sensors$/"
-		  }
-		]
-	      }
-	    ],
-	    "thresholds": [],
-	    "timeFrom": null,
-	    "timeRegions": [],
-	    "timeShift": null,
-	    "title": "Activity",
-	    "tooltip": {
-	      "shared": true,
-	      "sort": 0,
-	      "value_type": "individual"
-	    },
-	    "type": "graph",
-	    "xaxis": {
-	      "buckets": null,
-	      "mode": "time",
-	      "name": null,
-	      "show": true,
-	      "values": []
-	    },
-	    "yaxes": [
-	      {
-		"format": "short",
 		"label": null,
 		"logBase": 1,
 		"max": null,
@@ -2972,7 +2972,7 @@
 	    }
 	  }
 	],
-	"refresh": false,
+	"refresh": "1m",
 	"schemaVersion": 18,
 	"style": "dark",
 	"tags": [],
@@ -2981,10 +2981,8 @@
 	    {
 	      "allValue": null,
 	      "current": {
-		"text": "wustl-activity.wakefield-0002cc0100000360",
-		"value": [
-		  "wustl-activity.wakefield-0002cc0100000360"
-		]
+		"text": "All",
+		"value": "$__all"
 	      },
 	      "datasource": "wustl_activity_db",
 	      "definition": "show tag values from \"ActivityData\" with key=\"displayName\"",
@@ -3039,5 +3037,5 @@
 	"timezone": "",
 	"title": "Washington University Catena 4430 data",
 	"uid": "XGTfIuOZz",
-	"version": 6
+	"version": 8
       }
