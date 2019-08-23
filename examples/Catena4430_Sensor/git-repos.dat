@@ -1,0 +1,20 @@
+#
+# List of git repositories to be fetched to Arduino libraries directory.
+# This file can be used with git-boot.sh, which is distributed as part
+# https://github.com/mcci-catena/Catena-Sketches.
+#
+# The following are needed to support Catena 4610/4612 core. You might
+# need additional libraries if you're using an Adafruit Feather M0,
+# ESP32, etc.  We've only tested thoroughly with the Catena 4610.
+#
+github.com	mcci-catena/Catena-Arduino-Platform.git
+github.com	mcci-catena/arduino-lorawan.git
+github.com	mcci-catena/Catena-mcciadk.git
+github.com	mcci-catena/arduino-lmic.git
+github.com	mcci-catena/Adafruit_FRAM_I2C.git
+github.com	mcci-catena/Adafruit_BME280_Library.git
+github.com	mcci-catena/Adafruit_Sensor.git
+
+# the following are needed for the 4430 function.
+github.com	mcci-catena/SD.git
+github.com	mcci-catena/RTClib.git
