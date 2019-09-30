@@ -55,7 +55,7 @@ Description:
         in Farenheit, we return in Celsius.
 
 Returns:
-        number => heat index in Farenheit.
+        number => heat index in Celsius.
         null => error.
 
 References:
