@@ -228,7 +228,7 @@ void cMeasurementLoop::updateSynchronousMeasurements()
     this->m_data.vBat = gCatena.ReadVbat();
     this->m_data.flags |= Flags::Vbat;
 
-    this->m_data.vBus = gCatena.ReadVbat();
+    this->m_data.vBus = gCatena.ReadVbus();
     this->m_data.flags |= Flags::Vbus;
 
     if (gCatena.getBootCount(this->m_data.BootCount))
