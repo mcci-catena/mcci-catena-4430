@@ -98,6 +98,16 @@ void setup() {
     CardInfo(D5);
 
     ledCount = 0;
+
+    // set up the digital I/Os
+
+    // first off, power to the GPIOs, so we have pull-up current.
+    pinMode(D11, OUTPUT);
+    digitalWrite(D11, HIGH);
+
+    // second, enable the two inputs.
+    pinMode(A1, INPUT);
+    pinMode(A2, INPUT);
 }
 
 void setup_flash(void)
@@ -159,11 +169,17 @@ void loop() {
         // get the current time from the RTC
         DateTime now = rtc.now();
 
+
         // print it out.
         gCatena.SafePrintf("%02d:%02d:%02d", now.hour(), now.minute(), now.second());
         Serial.print(" PIR: ");
         Serial.print(v * 100.0f);
-        Serial.println("%");
+        Serial.print("%");
+
+        gCatena.SafePrintf("  A1: %s   A2: %s\n",
+            digitalRead(A1) ? "+" : "-",
+            digitalRead(A2) ? "+" : "-"
+            );
         }
 }
 
