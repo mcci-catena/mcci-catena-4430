@@ -19,8 +19,6 @@ Author:
 #include <string>
 #include <vector>
 
-std::string key;
-std::string value;
 
 template <typename T>
 struct val
@@ -43,7 +41,8 @@ struct light
 
 struct activity
     {
-    static constexpr unsigned knAvg = 6;
+    static constexpr unsigned knAvg = 16;
+    unsigned nAvg;
     float Avg[knAvg];
     };
 
@@ -265,6 +264,14 @@ public:
         this->push_back(std::uint8_t(v >> 8));
         this->push_back(std::uint8_t(v & 0xFF));
         }
+
+    void push_back_be4(std::uint32_t v)
+        {
+        this->push_back(std::uint8_t(v >> 24));
+        this->push_back(std::uint8_t(v >> 16));
+        this->push_back(std::uint8_t(v >> 8));
+        this->push_back(std::uint8_t(v & 0xFF));
+        }
     };
 
 void encodeMeasurement(Buffer &buf, Measurements &m)
@@ -279,7 +286,7 @@ void encodeMeasurement(Buffer &buf, Measurements &m)
     if (! m.Time.fValid)
         m.Time.v = 0;
 
-    buf.push_back_be(std::uint16_t(m.Time.v & 0xFFFFu));
+    buf.push_back_be4(std::uint32_t(m.Time.v));
 
     // send the flag byte
     buf.push_back(0u); // flag byte.
@@ -326,23 +333,23 @@ void encodeMeasurement(Buffer &buf, Measurements &m)
         buf.push_back_be(encodeLight(m.Light.v.White));
         }
 
-    if (m.Activity.fValid)
-        {
-        flags |= 1 << 6;
-
-        for (unsigned i = 0; i < activity::knAvg; ++i)
-            {
-            buf.push_back_be(encodeActivity(m.Activity.v.Avg[i]));
-            }
-        }
-
     if (m.Pellets.fValid)
         {
-        flags |= 1 << 7;
+        flags |= 1 << 6;
         for (unsigned i = 0; i < pellets::knCounter; ++i)
             {
             buf.push_back_be(encode16u(m.Pellets.v.counter[i].Total));
             buf.push_back(m.Pellets.v.counter[i].Delta);
+            }
+        }
+
+    if (m.Activity.fValid)
+        {
+        flags |= 1 << 7;
+
+        for (unsigned i = 0; i < m.Activity.v.nAvg; ++i)
+            {
+            buf.push_back_be(encodeActivity(m.Activity.v.Avg[i]));
             }
         }
 
@@ -409,23 +416,25 @@ void logMeasurement(Measurements &m)
         std::cout << pad.get() << "Light " << (float) m.Light.v.White;
         }
 
-    if (m.Activity.fValid)
-        {
-        std::cout << pad.get() << "Activity";
-        
-        for (unsigned i = 0; i < m.Activity.v.knAvg; ++i)
-            std::cout << " " << m.Activity.v.Avg[i];
-        }
-
     if (m.Pellets.fValid)
         {
         std::cout << pad.get() << "Pellets";
 
-        for (unsigned i = 0; i < m.Pellets.v.knCounter; ++i)
+        for (unsigned i = 0; i < std::size(m.Pellets.v.counter); ++i)
             {
             std::cout << " " << m.Pellets.v.counter[i].Total
                       << " " << (unsigned) m.Pellets.v.counter[i].Delta;
             }
+        }
+
+    if (m.Activity.fValid)
+        {
+        std::cout << pad.get() << "Activity [";
+        
+        for (unsigned i = 0; i < m.Activity.v.nAvg; ++i)
+            std::cout << " " << m.Activity.v.Avg[i];
+
+        std::cout << " ]";
         }
 
     // make the syntax cut/pastable.
@@ -458,6 +467,7 @@ int main(int argc, char **argv)
     Measurements m {0};
     Measurements m0 {0};
     bool fAny;
+    std::string key;
 
     std::cout << "Input one or more lines of name/value tuples, ended by '.'\n";
 
@@ -508,9 +518,40 @@ int main(int argc, char **argv)
             }
         else if (key == "Activity")
             {
-            for (unsigned i = 0; i < m.Activity.v.knAvg; ++i)
+            std::string token;
+            std::cin >> token;
+            if (token != "[")
+                {
+                std::cerr << "Activity parse error: expected '[': " << token << "\n";
+                return 1;
+                }
+
+            unsigned i = 0;
+            for (;i < std::size(m.Activity.v.Avg); ++i)
+                {
+                // read a word.
+                std::cin.clear();
                 std::cin >> m.Activity.v.Avg[i];
+
+                auto const state = std::cin.rdstate();
+
+                if (state & (std::cin.eofbit | std::cin.failbit | std::cin.badbit))
+                    {
+                    std::cin.clear(state & ~std::cin.failbit);
+                    break;
+                    }
+                }
+            
             m.Activity.fValid = true;
+            m.Activity.v.nAvg = i;
+
+            std::cin >> token;
+            if (token != "]")
+                {
+                std::cerr << "Activity parse error: expected ']': " << token << "\n";
+                return 1;
+                }
+
             }
         else if (key == "Pellets")
             {

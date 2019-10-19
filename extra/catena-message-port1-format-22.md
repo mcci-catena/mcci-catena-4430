@@ -14,18 +14,16 @@
     - [Boot counter (field 3)](#boot-counter-field-3)
     - [Environmental Readings (field 4)](#environmental-readings-field-4)
     - [Ambient Light (field 5)](#ambient-light-field-5)
-    - [Activity Indication (field 6)](#activity-indication-field-6)
-    - [Pellet consumption (field 7)](#pellet-consumption-field-7)
+    - [Pellet consumption (field 6)](#pellet-consumption-field-6)
+    - [Activity Indication (field 7)](#activity-indication-field-7)
 - [Data Formats](#data-formats)
-    - [uint16](#uint16)
-    - [int16](#int16)
-    - [uint8](#uint8)
-    - [uflt16](#uflt16)
-    - [sflt16](#sflt16)
+    - [`uint16`](#uint16)
+    - [`int16`](#int16)
+    - [`uint8`](#uint8)
+    - [`uflt16`](#uflt16)
+    - [`sflt16`](#sflt16)
+    - [`uint32`](#uint32)
 - [Test Vectors](#test-vectors)
-    - [Test vector generator](#test-vector-generator)
-- [The Things Network Console decoding script](#the-things-network-console-decoding-script)
-- [Node-RED Decoding Script](#node-red-decoding-script)
 
 <!-- /TOC -->
 <!-- markdownlint-restore -->
@@ -41,13 +39,27 @@ Each message has the following layout. There is a fixed part, followed by a vari
 byte | description
 :---:|:---
 0    | magic number 0x22
-1..4 | four bytes of time-stamp of measurement from RTC, expressed as seconds since the POSIX epoch (1970-01-01 00:00Z). See time discussion below.
-5    | a single byte, interpreted as a bit map indicating the fields that follow in bytes 6..*
+1..4 | four bytes of time-stamp of measurement from RTC, expressed as seconds since the POSIX epoch (1970-01-01 00:00Z). See [timekeeping](#timekeeping) discussion below.  This is expressed as a [`uint32`](#uint32)
+5    | a single byte, interpreted as a bit map indicating the fields that follow in bytes 6..*.
 6..* | data bytes; use bitmap to map these bytes onto fields.
 
 ### Timekeeping
 
-This is a thorny topic for scientific investigations. Steve Allen's website has a number of good discussions, including:
+Timekeeping is a thorny topic for scientific investigations, because one day is not exactly 86,400 seconds long. Obviously, the difference between two instants, measured in seconds, is independent of calendar system, but converting the time of each instant into ISO date and time is **not** independent of the calendar. Worse is that computing systems (e.g. POSIX-based systems) focus more on easy, deterministic conversion, and so assume that there are exactly 86400 seconds/day. In UTC time, the solar calendar date is paramount; leap-seconds are inserted or deleted as needed to keep UTC mean solar noon aligned with astronomical mean solar noon.
+
+In effect, the computer observes a sequence of seconds. We need to correlate them to calendar time, and we need to interpret know the interval between instances. Let's call the sequence of seconds _interval time_, as opposed to _calendar time_.
+
+Let's also define an important property of sequences of seconds -- "interval-preserving" sequences are those in which, if T1 and T2 are interval second numbers, (T2 - T1) is equal to the number of ITU seconds between the times T1 and T2.
+
+Since the RTC runs in calendar time, but we do all our work with interval time, we must consider this.
+
+There are (at least) three ways of relating interval time to calendar time.
+
+1. Keep interval time interval-preserving, and convert to calendar time as if days were exactly 86,400 seconds long. (GPS is such a time scale.) Differences between instants (in seconds) are in ITU seconds.
+2. Keep interval time interval-preserving, but convert to calendar time accounting for leap seconds (most days are 86,400 seconds long, but some days are 86,399 seconds long, others are 86,401 seconds long). (UTC is such a time scale.) Differences between instants (in seconds) are in ITU seconds.
+3. Make interval time _not_ interval-preserving by considering leap seconds. A day with 86,401 ITU seconds will have two seconds numbered 86,399; a day with 86,399 ITU seconds will not have a second numbered 86,399. Convert to date/time as if days were exactly 86,400 seconds long. The difference between two instants (in interval time) is not guaranteed to be accurate in ITU seconds.
+
+Steve Allen's website has a number of good discussions, including:
 
 - [Issues involved in computer time stamps and leap seconds][T1]
 - [Two kinds of Time, Two kinds of Time Scales][T2]
@@ -73,8 +85,8 @@ Bitmap bit | Length of corresponding field (bytes) | Data format |Description
 3 | 1 | [`uint8`](#uint8) | [Boot counter](#boot-counter-field-3)
 4 | 6 | [`int16`](#int16), [`uint16`](#uint16), [`uint16`](#uint16) | [Temperature, Pressure, Humidity](environmental-readings-field-4)
 5 | 2 | [`uint16`](#uint16) | [Ambient Light](#ambient-light-field-5)
-6 | 12 | [`sflt16`](#sflt16)\[6] | [Activity indication](#activity-indication-field-6)
-7 | 6 | ([`uint16`](#uint16), `uint8`)\[2] | [Pellet count](#pellet-count-field-7)
+6 | 6 | ([`uint16`](#uint16), `uint8`)\[2] | [Pellet count](#pellet-count-field-6)
+7 | 2*n | [`sflt16`](#sflt16)\[n] | [Activity indication](#activity-indication-field-7)
 
 ### Battery Voltage (field 0)
 
@@ -108,38 +120,44 @@ Field 4, if present, has three environmental readings as four bytes of data.
 
 This field represents the ambient "white light" expressed as W/cm^2. If the field is zero, it will not be transmitted.
 
-### Activity Indication (field 6)
+### Pellet consumption (field 6)
 
-Field 5 represents activity. It consists of 6 fields, 12 bytes of data. Each field represents the activity for one minute, as a value from -1 (no activity) to 1 (continuous activity). The numbers are each transmitted as [`sflt16`](#sflt16) values.
-
-### Pellet consumption (field 7)
-
-Field seven, if present, represents pellet consumption. This field has 2 bytes of data.
+Field six, if present, represents pellet consumption. This field has 6 bytes of data.
 
 - Bytes 0..1 are a [`uint16`] representing the running total from the first counter (GPIO `A1`). This rolls over after 65536 pulses, and is cleared at system boot.
 - Byte 2 is the number of pulses on `A1` in the last sample interval. This value saturates at 255 (i.e., if 256 pulses happen in an interval, the transmitted value is 255).
 - Bytes 3..4 are a [`uint16`] representing the running total from the second counter (GPIO `A2`). This rolls over after 65536 pulses, and is cleared at system boot.
 - Byte 5 is the number of pulses on `A2` in the last sample interval. This value saturates at 255 (i.e., if 256 pulses happen in an interval, the transmitted value is 255).
 
+### Activity Indication (field 7)
+
+Field 7 represents activity. It consists (nominally) of 6 fields, 12 bytes of data. Each field represents the activity for one minute, as a value from -1 (no activity) to 1 (continuous activity). The numbers are each transmitted as [`sflt16`](#sflt16) values.
+
+However, decoding software should be prepared for fewer or more points in the sequence.
+
+The last data point in the array correlates with the timestamp of the message. Preceding points were taken at one-minute intervals prior to the data.
+
+This format allows for software in the devices to upload activity indication at times different than the six-minute interval normally used.
+
 ## Data Formats
 
 All multi-byte data is transmitted with the most significant byte first (big-endian format).  Comments on the individual formats follow.
 
-### uint16
+### `uint16`
 
-an integer from 0 to 65536.
+An integer from 0 to 65,535.
 
-### int16
+### `int16`
 
-a signed integer from -32,768 to 32,767, in two's complement form. (Thus 0..0x7FFF represent 0 to 32,767; 0x8000 to 0xFFFF represent -32,768 to -1).
+A signed integer from -32,768 to 32,767, in two's complement form. (Thus 0..0x7FFF represent 0 to 32,767; 0x8000 to 0xFFFF represent -32,768 to -1).
 
-### uint8
+### `uint8`
 
-an integer from 0 to 255.
+An integer from 0 to 255.
 
-### uflt16
+### `uflt16`
 
-A unsigned floating point number in the half-open range [0, 1), transmitted as a 16-bit number with the following interpretation:
+An unsigned floating point number in the half-open range [0, 1), transmitted as a 16-bit number with the following interpretation:
 
 bits | description
 :---:|:---
@@ -162,7 +180,7 @@ Floating point mavens will immediately recognize:
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 2048.. 4095, and then transmit only `f - 2048`, saving a bit. However, this complicated the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 
-### sflt16
+### `sflt16`
 
 A signed floating point number in the half-open range [0, 1), transmitted as a 16-bit number with the following interpretation:
 
@@ -181,109 +199,171 @@ Floating point mavens will immediately recognize:
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 2048..4095, and then transmit only `f - 2048`, saving a bit. However, this complicates the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 
+### `uint32`
+
+An integer from 0 to 4,294,967,295. The first byte is the most-significant 8 bits; the last byte is the least-significant 8 bits.
+
 ## Test Vectors
 
 The following input data can be used to test decoders.
 
-`22 01 18 00`
+`22 00 00 00 00 01 18 00`
 
 ```json
 {
+  "time": 0,
   "vBat": 1.5
 }
 ```
 
-`22 02 F8 00`
+`22 00 00 00 00 02 F8 00`
 
 ```json
 {
+  "time": 0,
   "vSys": -0.5
-}
-```
+}```
 
-`22 04 7f ff`
+`22 00 00 00 00 04 7f ff`
 
 ```json
 {
+  "time": 0,
   "vBus": 7.999755859375
 }
 ```
 
-`22 08 2a`
+`22 00 00 00 00 08 2a`
 
 ```json
 {
-  "boot": 42
+  "boot": 42,
+  "time": 0
 }
 ```
 
-`22 10 14 00 5f 8f 99 99`
+`22 00 00 00 00 10 14 00 5f 8f 99 99`
 
 ```json
 {
   "p": 978.52,
   "rh": 60,
   "tDewC": 11.999894615745436,
-  "tempC": 20
+  "tempC": 20,
+  "time": 0
 }
 ```
 
-`22 10 1e 00 63 54 99 99`
+`22 00 00 00 00 10 1e 00 63 54 99 99`
 
 ```json
 {
-  "p": 1017.12,
-  "rh": 60,
-  "tDewC": 21.390006900020513,
-  "tHeatIndexF": 91.09765809999998,
-  "tempC": 30
-}
-```
-
-`22 20 00 64 00 c8 01 2c`
-
-```json
-{
-  "irradiance": {
-    "IR": 100,
-    "UV": 300,
-    "White": 200
-  }
-}
-```
-
-`22 40 7c 3d ff ff 7f ff`
-
-```json
-{
-  "activity": {
-    "Avg": 0.52978515625,
-    "Max": 0.99951171875,
-    "Min": -0.99951171875
-  }
-}
-```
-
-`22 7f 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 64 00 c8 01 2c 67 f0 ff ff 7f 2f`
-
-```json
-{
-  "activity": {
-    "Avg": 0.1240234375,
-    "Max": 0.89794921875,
-    "Min": -0.99951171875
-  },
-  "boot": 42,
-  "irradiance": {
-    "IR": 100,
-    "UV": 300,
-    "White": 200
-  },
   "p": 1017.12,
   "rh": 60,
   "tDewC": 21.390006900020513,
   "tHeatIndexC": 32.83203227777776,
   "tempC": 30,
+  "time": 0
+}
+```
+
+`22 00 00 00 00 20 00 c8`
+
+```json
+{
+  "irradiance": {
+    "White": 200
+  },
+  "time": 0
+}
+```
+
+`22 00 00 00 00 80`
+
+```json
+{
+  "activity": {},
+  "time": 0
+}
+```
+
+`22 00 00 00 00 80 74 52`
+
+```json
+{
+  "activity": {
+    "0": 0.27001953125
+  },
+  "time": 0
+}
+```
+
+`22 00 00 00 00 80 7C 3D FF FF 7F FF FC 00 74 00 F4 CD`
+
+```json
+{
+  "activity": [
+    0.52978515625,
+    -0.99951171875,
+    0.99951171875,
+    -0.5,
+    0.25,
+    -0.300048828125
+  ],
+  "time": 0
+}
+```
+
+`22 00 00 00 00 40 00 64 03 00 19 0A`
+
+```json
+{
+  "pellets": [
+    {
+      "Delta": 3,
+      "Total": 100
+    },
+    {
+      "Delta": 10,
+      "Total": 25
+    }
+  ],
+  "time": 0
+}
+```
+
+`22 4a d5 06 db ff 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 c8 00 64 03 00 19 0a 7c 3d ff ff 7f ff fc 00 74 00 f4 cd`
+
+```json
+{
+  "activity": [
+    0.52978515625,
+    -0.99951171875,
+    0.99951171875,
+    -0.5,
+    0.25,
+    -0.300048828125
+  ],
+  "boot": 42,
+  "irradiance": {
+    "White": 200
+  },
+  "p": 1017.12,
+  "pellets": [
+    {
+      "Delta": 3,
+      "Total": 100
+    },
+    {
+      "Delta": 10,
+      "Total": 25
+    }
+  ],
+  "rh": 60,
+  "tDewC": 21.390006900020513,
+  "tHeatIndexC": 32.83203227777776,
+  "tempC": 30,
+  "time": 1255474907000,
   "vBat": 2,
   "vBus": 4.89990234375,
   "vSys": 3.300048828125
@@ -322,26 +402,48 @@ For usage, read the source or the check the input vector generation file `catena
 To run it against the test vectors, try:
 
 ```console
-$ catena-message-port1-format-22-test < catena-message-port1-format-22.vec
-Input a line with name/values pairs
+C> catena-message-port1-format-22-test < catena-message-port1-format-22.vec
+Time 1255474907 .
+22 4a d5 06 db 00
+length: 6
 Vbat 1.5 .
-22 01 18 00
+22 00 00 00 00 01 18 00
+length: 8
 Vsys -0.5 .
-22 02 f8 00
+22 00 00 00 00 02 f8 00
+length: 8
 Vbus 10 .
-22 04 7f ff
-Boot 2a .
-22 08 2a
+22 00 00 00 00 04 7f ff
+length: 8
+Boot 42 .
+22 00 00 00 00 08 2a
+length: 7
 Env 20 978.5 60 .
-22 10 14 00 5f 8f 99 99
+22 00 00 00 00 10 14 00 5f 8f 99 99
+length: 12
 Env 30 1017.1 60 .
-22 10 1e 00 63 54 99 99
-Light 100 200 300 .
-22 20 00 64 00 c8 01 2c
-Activity 0.53 -1 1 .
-22 40 7c 3d ff ff 7f ff
-Vbat 2 Vsys 3.3 Vbus 4.9 Boot 2a Env 30 1017.1 60 Light 100 200 300 Activity 0.124 -1 0.898 .
-22 7f 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 64 00 c8 01 2c 67 f0 ff ff 7f 2f
+22 00 00 00 00 10 1e 00 63 54 99 99
+length: 12
+Light 200 .
+22 00 00 00 00 20 00 c8
+length: 8
+Activity [ ] .
+22 00 00 00 00 80
+length: 6
+Activity [ 0.27 ] .
+22 00 00 00 00 80 74 52
+length: 8
+Activity [ 0.53 -1 1 -0.5 0.25 -0.3 ] .
+22 00 00 00 00 80 7c 3d ff ff 7f ff fc 00 74 00 f4 cd
+length: 18
+Pellets 100 3 25 10 .
+22 00 00 00 00 40 00 64 03 00 19 0a
+length: 12
+Time 1255474907 Vbat 2 Vsys 3.3 Vbus 4.9 Boot 42 Env 30 1017.1 60 Light 200 Pellets 100 3 25 10 Activity [ 0.53 -1 1 -0.5 0.25 -0.3 ] .
+22 4a d5 06 db ff 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 c8 00 64 03 00 19 0a 7c 3d ff ff 7f ff fc 00 74 00 f4 cd
+length: 39
+
+C>
 ```
 
 ## The Things Network Console decoding script
