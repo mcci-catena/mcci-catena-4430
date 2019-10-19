@@ -1,4 +1,4 @@
-# Understanding MCCI Catena data sent on port 1 format 0x21
+# Understanding MCCI Catena data sent on port 1 format 0x22
 
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-capture -->
@@ -6,56 +6,75 @@
 <!-- TOC depthFrom:2 updateOnSave:true -->
 
 - [Overall Message Format](#overall-message-format)
-- [Bitmap fields and associated fields](#bitmap-fields-and-associated-fields)
-        - [Battery Voltage (field 0)](#battery-voltage-field-0)
-        - [System Voltage (field 1)](#system-voltage-field-1)
-        - [Bus Voltage (field 2)](#bus-voltage-field-2)
-        - [Boot counter (field 3)](#boot-counter-field-3)
-        - [Environmental Readings (field 4)](#environmental-readings-field-4)
-        - [Particle Concentrations (field 5)](#particle-concentrations-field-5)
+    - [Timekeeping](#timekeeping)
+- [Optional fields](#optional-fields)
+    - [Battery Voltage (field 0)](#battery-voltage-field-0)
+    - [System Voltage (field 1)](#system-voltage-field-1)
+    - [Bus Voltage (field 2)](#bus-voltage-field-2)
+    - [Boot counter (field 3)](#boot-counter-field-3)
+    - [Environmental Readings (field 4)](#environmental-readings-field-4)
+    - [Ambient Light (field 5)](#ambient-light-field-5)
+    - [Activity Indication (field 6)](#activity-indication-field-6)
+    - [Pellet consumption (field 7)](#pellet-consumption-field-7)
 - [Data Formats](#data-formats)
-        - [uint16](#uint16)
-        - [int16](#int16)
-        - [uint8](#uint8)
-        - [uflt16](#uflt16)
-        - [sflt16](#sflt16)
+    - [uint16](#uint16)
+    - [int16](#int16)
+    - [uint8](#uint8)
+    - [uflt16](#uflt16)
+    - [sflt16](#sflt16)
 - [Test Vectors](#test-vectors)
-        - [Test vector generator](#test-vector-generator)
+    - [Test vector generator](#test-vector-generator)
 - [The Things Network Console decoding script](#the-things-network-console-decoding-script)
 - [Node-RED Decoding Script](#node-red-decoding-script)
 
 <!-- /TOC -->
 <!-- markdownlint-restore -->
 <!-- Due to a bug in Markdown TOC, the table is formatted incorrectly if tab indentation is set other than 4. Due to another bug, this comment must be *after* the TOC entry. -->
+<!-- due to another bug in Markdown TOC, you need to have Editor>Tab Size set to 4 (even though it will be auto-overridden); it uses that setting rather than the current setting for the file. -->
 
 ## Overall Message Format
 
-Port 1 format 0x21 uplink messages are sent by Catena4430_Sensor and related sketches. We use the discriminator byte in the same way as many of the sketches in the Catena-Sketches collection.
+Port 1 format 0x22 uplink messages are sent by Catena4430_Sensor and related sketches. We use the discriminator byte in the same way as many of the sketches in the Catena-Sketches collection.
 
-Each message has the following layout.
+Each message has the following layout. There is a fixed part, followed by a variable part. THe maximum message size is 37 bytes, which allows for operation as slow as DR1 (SF9) in the United States.
 
 byte | description
 :---:|:---
-0    | magic number 0x21
-1    | bitmap encoding the fields that follow
-2..n | data bytes; use bitmap to map these bytes onto fields.
+0    | magic number 0x22
+1..4 | four bytes of time-stamp of measurement from RTC, expressed as seconds since the POSIX epoch (1970-01-01 00:00Z). See time discussion below.
+5    | a single byte, interpreted as a bit map indicating the fields that follow in bytes 6..*
+6..* | data bytes; use bitmap to map these bytes onto fields.
 
-Each bit in byte 1 represents whether a corresponding field in bytes 2..n is present. If all bits are clear, then no data bytes are present. If bit 0 is set, then field 0 is present; if bit 1 is set, then field 1 is present, and so forth. If a field is omitted, all bytes for that field are omitted.
+### Timekeeping
 
-## Bitmap fields and associated fields
+This is a thorny topic for scientific investigations. Steve Allen's website has a number of good discussions, including:
+
+- [Issues involved in computer time stamps and leap seconds][T1]
+- [Two kinds of Time, Two kinds of Time Scales][T2]
+
+[T1]: https://www.ucolick.org/~sla/leapsecs/picktwo.html
+[T2]: https://www.ucolick.org/~sla/leapsecs/twokindsoftime.html
+
+The onboard real-time clock counts in "calendar" time, and will be set by people (again in "calendar" time) from watches etc. that run from UTC or a derivative.  We will assume that the user can input the time in UTC and that the battery-backed RTC is recording time in UTC.
+
+Therefore, we use a timescale that simply states that days have 86,400 seconds. In this application, we think that this will be good enough. If we ever start to use LoRaWAN ("GPS") time, we assume that the network will be able to send us the information needed to convert to calendar time as needed. This may add a little complication but it's future complication and we'll deal with all this if the need arises.
+
+## Optional fields
+
+Each bit in byte 5 represents whether a corresponding field in bytes 6..n is present. If all bits are clear, then no data bytes are present. If bit 0 is set, then field 0 is present; if bit 1 is set, then field 1 is present, and so forth. If a field is omitted, all bytes for that field are omitted.
 
 The bitmap byte has the following interpretation. `int16`, `uint16`, etc. are defined after the table.
 
 Bitmap bit | Length of corresponding field (bytes) | Data format |Description
 :---:|:---:|:---:|:----
-0 | 2 | [int16](#int16) | [Battery voltage](#battery-voltage-field-0)
-1 | 2 | [int16](#int16) | [System voltage](#sys-voltage-field-1)
-2 | 2 | [int16](#int16) | [Bus voltage](#bus-voltage-field-2)
-3 | 1 | [uint8](#uint8) | [Boot counter](#boot-counter-field-3)
-4 | 6 | [int16](#int16), [uint16](#uint16), [uint16](#uint16) | [Temperature, Pressure, Humidity](environmental-readings-field-4)
-5 | 6 | [uint16](#uint16), [uint16](#uint16), [uint16](#uint16) | [Ambient Light](#ambient-light-field-5)
-6 | 6 | [sflt16](#sflt16), [sflt16](#sflt16), [sflt16](#sflt16) | [Activity indication](#activity-indication-field-6)
-7 | n/a | _reserved_ | Reserved for future use.
+0 | 2 | [`int16`](#int16) | [Battery voltage](#battery-voltage-field-0)
+1 | 2 | [`int16`](#int16) | [System voltage](#sys-voltage-field-1)
+2 | 2 | [`int16`](#int16) | [Bus voltage](#bus-voltage-field-2)
+3 | 1 | [`uint8`](#uint8) | [Boot counter](#boot-counter-field-3)
+4 | 6 | [`int16`](#int16), [`uint16`](#uint16), [`uint16`](#uint16) | [Temperature, Pressure, Humidity](environmental-readings-field-4)
+5 | 2 | [`uint16`](#uint16) | [Ambient Light](#ambient-light-field-5)
+6 | 12 | [`sflt16`](#sflt16)\[6] | [Activity indication](#activity-indication-field-6)
+7 | 6 | ([`uint16`](#uint16), `uint8`)\[2] | [Pellet count](#pellet-count-field-7)
 
 ### Battery Voltage (field 0)
 
@@ -85,14 +104,22 @@ Field 4, if present, has three environmental readings as four bytes of data.
 
 - The next two bytes are a [`uint16`](#uint16) representing the relative humidity (divide by 65535 to get percent). This field can represent humidity from 0% to 100%, in steps of roughly 0.001529%.
 
-### Particle Concentrations (field 5)
+### Ambient Light (field 5)
 
-Field 5, if present, has nine particle concentrations as 18 bytes of data, each as a [`uflt16`](#uflt16).  `uflt16` values respresent values in [0, 1).
+This field represents the ambient "white light" expressed as W/cm^2. If the field is zero, it will not be transmitted.
 
-The fields in order are:
+### Activity Indication (field 6)
 
-- PM1.0, PM2.5 and PM10 concentrations. Multiply by 65536 to get concentrations in &mu;g per cubic meter.
-- Dust concentrations for particles of size 0.3, 0.5, 1.0, 2.5, 5.0 and 10 microns. Multiply by 65536 to get particle counts per 0.1L of air.
+Field 5 represents activity. It consists of 6 fields, 12 bytes of data. Each field represents the activity for one minute, as a value from -1 (no activity) to 1 (continuous activity). The numbers are each transmitted as [`sflt16`](#sflt16) values.
+
+### Pellet consumption (field 7)
+
+Field seven, if present, represents pellet consumption. This field has 2 bytes of data.
+
+- Bytes 0..1 are a [`uint16`] representing the running total from the first counter (GPIO `A1`). This rolls over after 65536 pulses, and is cleared at system boot.
+- Byte 2 is the number of pulses on `A1` in the last sample interval. This value saturates at 255 (i.e., if 256 pulses happen in an interval, the transmitted value is 255).
+- Bytes 3..4 are a [`uint16`] representing the running total from the second counter (GPIO `A2`). This rolls over after 65536 pulses, and is cleared at system boot.
+- Byte 5 is the number of pulses on `A2` in the last sample interval. This value saturates at 255 (i.e., if 256 pulses happen in an interval, the transmitted value is 255).
 
 ## Data Formats
 
@@ -158,7 +185,7 @@ Floating point mavens will immediately recognize:
 
 The following input data can be used to test decoders.
 
-`21 01 18 00`
+`22 01 18 00`
 
 ```json
 {
@@ -166,7 +193,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 02 F8 00`
+`22 02 F8 00`
 
 ```json
 {
@@ -174,7 +201,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 04 7f ff`
+`22 04 7f ff`
 
 ```json
 {
@@ -182,7 +209,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 08 2a`
+`22 08 2a`
 
 ```json
 {
@@ -190,7 +217,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 10 14 00 5f 8f 99 99`
+`22 10 14 00 5f 8f 99 99`
 
 ```json
 {
@@ -201,7 +228,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 10 1e 00 63 54 99 99`
+`22 10 1e 00 63 54 99 99`
 
 ```json
 {
@@ -213,7 +240,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 20 00 64 00 c8 01 2c`
+`22 20 00 64 00 c8 01 2c`
 
 ```json
 {
@@ -225,7 +252,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 40 7c 3d ff ff 7f ff`
+`22 40 7c 3d ff ff 7f ff`
 
 ```json
 {
@@ -237,7 +264,7 @@ The following input data can be used to test decoders.
 }
 ```
 
-`21 7f 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 64 00 c8 01 2c 67 f0 ff ff 7f 2f`
+`22 7f 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 64 00 c8 01 2c 67 f0 ff ff 7f 2f`
 
 ```json
 {
@@ -270,51 +297,51 @@ This repository contains a simple C++ file for generating test vectors.
 Build it from the command line. Using Visual C++:
 
 ```console
-C> cl /EHsc catena-message-port1-format-21-test.cpp
+C> cl /EHsc catena-message-port1-format-22-test.cpp
 Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x64
 Copyright (C) Microsoft Corporation.  All rights reserved.
 
-catena-message-port1-format-21-test.cpp
+catena-message-port1-format-22-test.cpp
 Microsoft (R) Incremental Linker Version 14.16.27031.1
 Copyright (C) Microsoft Corporation.  All rights reserved.
 
-/out:catena-message-port1-format-21-test.exe
-catena-message-port1-format-21-test.obj
+/out:catena-message-port1-format-22-test.exe
+catena-message-port1-format-22-test.obj
 ```
 
 Using GCC or Clang on Linux:
 
 ```bash
-make catena-message-port1-format-21-test
+make catena-message-port1-format-22-test
 ```
 
 (The default make rules should work.)
 
-For usage, read the source or the check the input vector generation file `catena-message-port1-format-21.vec`.
+For usage, read the source or the check the input vector generation file `catena-message-port1-format-22.vec`.
 
 To run it against the test vectors, try:
 
 ```console
-$ catena-message-port1-format-21-test < catena-message-port1-format-21.vec
+$ catena-message-port1-format-22-test < catena-message-port1-format-22.vec
 Input a line with name/values pairs
 Vbat 1.5 .
-21 01 18 00
+22 01 18 00
 Vsys -0.5 .
-21 02 f8 00
+22 02 f8 00
 Vbus 10 .
-21 04 7f ff
+22 04 7f ff
 Boot 2a .
-21 08 2a
+22 08 2a
 Env 20 978.5 60 .
-21 10 14 00 5f 8f 99 99
+22 10 14 00 5f 8f 99 99
 Env 30 1017.1 60 .
-21 10 1e 00 63 54 99 99
+22 10 1e 00 63 54 99 99
 Light 100 200 300 .
-21 20 00 64 00 c8 01 2c
+22 20 00 64 00 c8 01 2c
 Activity 0.53 -1 1 .
-21 40 7c 3d ff ff 7f ff
+22 40 7c 3d ff ff 7f ff
 Vbat 2 Vsys 3.3 Vbus 4.9 Boot 2a Env 30 1017.1 60 Light 100 200 300 Activity 0.124 -1 0.898 .
-21 7f 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 64 00 c8 01 2c 67 f0 ff ff 7f 2f
+22 7f 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 64 00 c8 01 2c 67 f0 ff ff 7f 2f
 ```
 
 ## The Things Network Console decoding script
@@ -323,12 +350,12 @@ The repository contains a generic script that decodes messages in this format, f
 
 You can get the latest version on GitHub:
 
-- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port1-21-decoder-ttn.js), or
-- [view it](https://github.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port1-21-decoder-ttn.js).
+- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port1-22-decoder-ttn.js), or
+- [view it](https://github.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port1-22-decoder-ttn.js).
 
 ## Node-RED Decoding Script
 
 A Node-RED script to decode this data is part of this repository. You can download the latest version from GitHub:
 
-- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port1-21-decoder-node-red.js), or
-- [view it](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port1-21-decoder-node-red.js).
+- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port1-22-decoder-node-red.js), or
+- [view it](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port1-22-decoder-node-red.js).

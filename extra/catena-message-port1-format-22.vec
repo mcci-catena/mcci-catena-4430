@@ -1,0 +1,21 @@
+Time 1255474907 .
+Vbat 1.5 .
+Vsys -.5 .
+Vbus 10 .
+Boot 42 .
+Env 20 978.5 60 .
+Env 30 1017.1 60 .
+Light 200 .
+Activity 0.53 -1 1 -.5 .25 -.3 .
+Pellets 100 3 25 10 .
+
+Time 1255474907
+Vbat 2.0 
+Vsys 3.3 
+Vbus 4.9
+Boot 42 
+Env 30 1017.1 60 
+Light  200
+Activity 0.53 -1 1 -.5 .25 -.3 
+Pellets 100 3 25 10
+.
