@@ -1,6 +1,6 @@
 /*
 
-Name:   catena-message-port1-format-20-decoder-node-red.js
+Name:   catena-message-port1-format-21-decoder-node-red.js
 
 Function:
     Decode port 0x01 format 0x21 messages for Node-RED.
