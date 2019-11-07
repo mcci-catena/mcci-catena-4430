@@ -1,6 +1,6 @@
 /*
 
-Module: Catena4430-cPIRdigital.cpp
+Module: Catena4430_cPIRdigital.cpp
 
 Function:
     The Catena4430 library: implementation for the Catena PIR sensor library
@@ -13,7 +13,7 @@ Author:
 
 */
 
-#include "../Catena4430-cPIRdigital.h"
+#include "../Catena4430_cPIRdigital.h"
 
 #include <Arduino.h>
 #include <CatenaBase.h>

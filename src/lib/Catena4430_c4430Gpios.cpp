@@ -1,6 +1,6 @@
 /*
 
-Module: Catena4430-c4430Gpios.cpp
+Module: Catena4430_c4430Gpios.cpp
 
 Function:
     The Catena4430 library: implementation for the Catena GPIOs
@@ -13,7 +13,7 @@ Author:
 
 */
 
-#include "../Catena4430-c4430Gpios.h"
+#include "../Catena4430_c4430Gpios.h"
 
 using namespace McciCatena4430;
 

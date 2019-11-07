@@ -18,7 +18,7 @@ Author:
 
 #pragma once
 
-#include "Catena4430-version.h"
+#include "Catena4430_version.h"
 #include <Catena_FSM.h>
 #include <Catena_PollableInterface.h>
 
@@ -26,7 +26,7 @@ namespace McciCatena4430 {
 
 /****************************************************************************\
 |
-|   PMS7003 sensor
+|   Catena 4430 object
 |
 \****************************************************************************/
 

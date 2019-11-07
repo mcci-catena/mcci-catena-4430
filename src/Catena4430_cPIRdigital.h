@@ -1,6 +1,6 @@
 /*
 
-Module: Catena4430-cPIRdigital.h
+Module: Catena4430_cPIRdigital.h
 
 Function:
     The Catena4430 library: library for the PIR sensor

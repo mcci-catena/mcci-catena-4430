@@ -21,9 +21,9 @@ Author:
 #include <SPI.h>
 #include <arduino_lmic.h>
 #include <Catena_Timer.h>
-#include <Catena4430-cPCA9570.h>
-#include <Catena4430-c4430Gpios.h>
-#include <Catena4430-cPIRdigital.h>
+#include <Catena4430_cPCA9570.h>
+#include <Catena4430_c4430Gpios.h>
+#include <Catena4430_cPIRdigital.h>
 #include "Catena4430_cMeasurementLoop.h"
 
 extern McciCatena::Catena gCatena;

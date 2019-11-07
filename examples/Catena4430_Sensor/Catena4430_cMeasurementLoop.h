@@ -34,7 +34,7 @@ Author:
 #include <Catena.h>
 #include <mcciadk_baselib.h>
 #include <stdlib.h>
-#include "Catena4430-cPIRdigital.h"
+#include "Catena4430_cPIRdigital.h"
 
 #include <cstdint>
 

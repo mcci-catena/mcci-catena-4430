@@ -1,6 +1,6 @@
 /*
 
-Module: Catena4430-version.h
+Module: Catena4430_version.h
 
 Function:
     The Catena4430 library: the version constants

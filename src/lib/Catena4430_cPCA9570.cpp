@@ -1,6 +1,6 @@
 /*
 
-Module: Catena4430-cPCA9570.cpp
+Module: Catena4430_cPCA9570.cpp
 
 Function:
     The Catena4430 library: implementation for the PCA9570 I2C output buffer
@@ -13,7 +13,7 @@ Author:
 
 */
 
-#include "../Catena4430-cPCA9570.h"
+#include "../Catena4430_cPCA9570.h"
 
 using namespace McciCatena4430;
 

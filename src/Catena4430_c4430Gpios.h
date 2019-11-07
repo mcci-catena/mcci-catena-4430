@@ -1,6 +1,6 @@
 /*
 
-Module: Catena4430-c4430Gpios.h
+Module: Catena4430_c4430Gpios.h
 
 Function:
     The Catena4430 library: library for the PCA9570 I2C output buffer
@@ -18,7 +18,7 @@ Author:
 
 #pragma once
 
-#include <Catena4430-cPCA9570.h>
+#include <Catena4430_cPCA9570.h>
 
 namespace McciCatena4430 {
 
