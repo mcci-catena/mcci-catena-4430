@@ -79,7 +79,7 @@ The Catena 4610 has the following features.
 
 ## Example Sketches
 
-The [`catena4430-test`](examples/catena4430-test/catena4430-test.ino) example sketch tests various features of the Catena 4430.
+The [`Catena4430_Test`](examples/Catena4430_Test/Catena4430_Test.ino) example sketch tests various features of the Catena 4430.
 
 The [`Catena4430_Sensor`](examples/Catena4430_Sensor/Catena4430_Sensor.ino) example is a completely worked remote sensor sketch with power management.
 

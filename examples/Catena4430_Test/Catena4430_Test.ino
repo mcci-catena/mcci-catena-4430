@@ -70,7 +70,7 @@ void setup() {
     Serial.begin(115200);
     while (! Serial)
         delay(1);
-    Serial.println("\ncatena4430-testgpio");
+    Serial.println("\nCatena4430_Test");
 
     gCatena.begin();
     setup_flash();

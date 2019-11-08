@@ -1,4 +1,4 @@
-# catena4430-test.ino
+# Catena4430_Test.ino
 
 Simple demonstration program for the Catena 4430.
 
