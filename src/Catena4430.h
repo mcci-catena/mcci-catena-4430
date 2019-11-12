@@ -21,6 +21,7 @@ Author:
 #include "Catena4430_version.h"
 #include <Catena_FSM.h>
 #include <Catena_PollableInterface.h>
+#include <Catena4430_cClockDriver_PCF8523.h>
 
 namespace McciCatena4430 {
 
@@ -41,9 +42,7 @@ private:
     // Constructor, etc.
     //*******************************************
 public:
-    Catena4430(cSerial &port, Catena4430Hal &hal)
-        : m_port    (&port)
-        , m_hal     (&hal)
+    Catena4430()
         {};
 
     // neither copyable nor movable
@@ -67,6 +66,11 @@ public:
     void resume();
 
     //*******************************************
+    // Public contents
+    //*******************************************
+public:
+
+    //*******************************************
     // Internal utilities
     //*******************************************
 private:
@@ -78,5 +82,8 @@ private:
     };  // class Catena4430
 
 } // namespace McciCatena4430
+
+extern McciCatena4430::Catena4430           gCatena4430;
+extern McciCatena4430::cClockDriver_PCF8523 gClock;
 
 #endif // defined _Catena4430_h_

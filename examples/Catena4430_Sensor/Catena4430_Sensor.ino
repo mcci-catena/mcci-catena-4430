@@ -25,6 +25,8 @@ Author:
 #include <Catena4430_c4430Gpios.h>
 #include <Catena4430_cPIRdigital.h>
 #include "Catena4430_cMeasurementLoop.h"
+#include "Catena4430_cmd.h"
+#include <Catena4430_cClockDriver_PCF8523.h>
 
 extern McciCatena::Catena gCatena;
 using namespace McciCatena4430;
@@ -36,8 +38,12 @@ using namespace McciCatena;
 |
 \****************************************************************************/
 
+// the global I2C GPIO object
+cPCA9570                i2cgpio    { &Wire };
 
-cPCA9570 i2cgpio    { &Wire };
+// the global clock object
+cClockDriver_PCF8523    gClock      { &Wire };
+
 c4430Gpios gpio     { &i2cgpio };
 Catena gCatena;
 cTimer ledTimer;
@@ -58,6 +64,30 @@ cMeasurementLoop gMeasurementLoop;
 Catena_Mx25v8035f gFlash;
 
 unsigned ledCount;
+
+/****************************************************************************\
+|
+|   User commands
+|
+\****************************************************************************/
+
+// the individual commmands are put in this table
+static const cCommandStream::cEntry sMyExtraCommmands[] =
+        {
+        { "date", cmdDate },
+        // { "debugmask", cmdDebugMask },
+        // other commands go here....
+        };
+
+/* a top-level structure wraps the above and connects to the system table */
+/* it optionally includes a "first word" so you can for sure avoid name clashes */
+static cCommandStream::cDispatch
+sMyExtraCommands_top(
+        sMyExtraCommmands,          /* this is the pointer to the table */
+        sizeof(sMyExtraCommmands),  /* this is the size of the table */
+        nullptr                     /* this is no "first word" for all the commands in this table */
+        );
+
 
 /****************************************************************************\
 |
@@ -186,7 +216,17 @@ void setup_measurement()
 
 void setup_commands()
     {
-    // none yet.  Add commands for setting clock, etc.
+    /* add our application-specific commands */
+    gCatena.addCommands(
+        /* name of app dispatch table, passed by reference */
+        sMyExtraCommands_top,
+        /*
+        || optionally a context pointer using static_cast<void *>().
+        || normally only libraries (needing to be reentrant) need
+        || to use the context pointer.
+        */
+        nullptr
+        );
     }
 
 void setup_start()
