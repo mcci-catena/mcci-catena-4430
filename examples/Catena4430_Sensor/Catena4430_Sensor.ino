@@ -32,6 +32,11 @@ extern McciCatena::Catena gCatena;
 using namespace McciCatena4430;
 using namespace McciCatena;
 
+static_assert(
+    CATENA_ARDUINO_PLATFORM_VERSION >= CATENA_ARDUINO_PLATFORM_VERSION_CALC(0, 17, 0, 40),
+    "This sketch requires Catena-Arduino-Platform v0.17.0.40 or later"
+    );
+
 /****************************************************************************\
 |
 |   Variables.
