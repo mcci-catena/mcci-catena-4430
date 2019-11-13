@@ -48,7 +48,7 @@ Description:
 
     date hh:mm:ss
         Set the time only (leave date alone)
-    
+
     date yyy-mm-dd
         Set the date only (leave time alone)
 

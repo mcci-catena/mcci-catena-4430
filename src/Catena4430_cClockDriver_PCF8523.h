@@ -158,8 +158,8 @@ public:
         AIE = 1 << 1,
         CIE = 1 << 0
         };
-    
-    enum class kRegControl_2 : std::uint8_t 
+
+    enum class kRegControl_2 : std::uint8_t
         {
         WTAF = 1 << 7,
         CTAF = 1 << 6,
@@ -218,8 +218,8 @@ public:
         RSV6 = 3 << 6,
         DAYS = 0x3F,
         };
-    
-    enum class kRegWeekdays : std::uint8_t 
+
+    enum class kRegWeekdays : std::uint8_t
         {
         RSV3 = 0xF8,
         WEEKDAYS = 0x7,
@@ -251,7 +251,7 @@ public:
 protected:
     static bool checkInitialized(kRegControl_1 rControl1, kRegControl_3 rControl3);
     bool readBuffer(std::uint8_t *pBuffer, unsigned nBytes);
-    bool writeBuffer(std::uint8_t const *pBuffer, unsigned nBytes);    
+    bool writeBuffer(std::uint8_t const *pBuffer, unsigned nBytes);
 
 private:
     TwoWire *m_wire;

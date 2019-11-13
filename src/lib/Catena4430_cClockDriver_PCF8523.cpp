@@ -19,11 +19,11 @@ Author:
 using namespace McciCatena4430;
 using namespace McciCatena;
 
-static constexpr std::uint8_t bcd2bin(std::uint8_t val) 
+static constexpr std::uint8_t bcd2bin(std::uint8_t val)
     {
     return val - /* excess 6 in encoding for each decade */ 6 * (val >> 4);
     }
-static constexpr uint8_t bin2bcd(uint8_t val) 
+static constexpr uint8_t bin2bcd(uint8_t val)
     {
     // divide by ten, and then multiply by 6 to add excess encoding to make bcd.
     return val + 6 * ((val * 0x19A) >> 12);
@@ -51,7 +51,7 @@ bool cClockDriver_PCF8523::checkInitialized(kRegControl_1 rControl_1, kRegContro
         // clock is in 12-hour mode, not initialized by us!
         return false;
         }
-    
+
     kRegControl_3_PM pmBits = getField<kRegControl_3_PM, kRegControl_3>(rControl_3, kRegControl_3::PM);
 
     if (pmBits != kRegControl_3_PM::NoSwitchNoLowBattDetect)
@@ -74,7 +74,7 @@ bool cClockDriver_PCF8523::isInitialized()
     if (this->m_wire->requestFrom(this->m_i2caddr, std::uint8_t(3)) != 3)
         return false;
 
-    // get the byte and check the status. 
+    // get the byte and check the status.
     kRegControl_1 rControl_1 = kRegControl_1(this->m_wire->read());
     (void) this->m_wire->read();
     kRegControl_3 rControl_3 = kRegControl_3(this->m_wire->read());
@@ -160,7 +160,7 @@ bool cClockDriver_PCF8523::set(const McciCatena::cDate &d, unsigned *pError)
 
     for (unsigned i = 0; i < ctrlregs.length(); ++i)
         ctrlregs.putraw(i, this->m_wire->read());
-    
+
     kRegControl_1 rControl_1 = ctrlregs.get<kRegControl_1>(kReg::Control_1);
     if (getField<bool, kRegControl_1>(rControl_1, kRegControl_1::k12_24))
         {
@@ -194,7 +194,7 @@ bool cClockDriver_PCF8523::set(const McciCatena::cDate &d, unsigned *pError)
         return seterror(6);
 
     // finally, make sure the battery mode is set.
-    if (getField<kRegControl_3_PM, kRegControl_3>(ctrlregs.get<kRegControl_3>(kReg::Control_3), kRegControl_3::PM) == 
+    if (getField<kRegControl_3_PM, kRegControl_3>(ctrlregs.get<kRegControl_3>(kReg::Control_3), kRegControl_3::PM) ==
         kRegControl_3_PM::NoSwitchNoLowBattDetect)
         {
         this->m_wire->beginTransmission(this->m_i2caddr);
