@@ -83,7 +83,6 @@ cCommandStream::CommandStatus cmdDate(
                 }
             }
 
-        pThis->printf("%s\n", argv[0]);
         if (argc < 2)
             {
             if (! fInitialized)
