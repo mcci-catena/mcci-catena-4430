@@ -17,7 +17,6 @@ Author:
 #include <Wire.h>
 #include <Catena.h>
 #include <Catena_Mx25v8035f.h>
-#include <RTClib.h>
 #include <SPI.h>
 #include <arduino_lmic.h>
 #include <Catena_Timer.h>
@@ -54,8 +53,6 @@ Catena gCatena;
 cTimer ledTimer;
 Catena::LoRaWAN gLoRaWAN;
 StatusLed gLed (Catena::PIN_STATUS_LED);
-
-RTC_PCF8523 rtc;
 
 SPIClass gSPI2(
     Catena::PIN_SPI2_MOSI,
@@ -180,15 +177,19 @@ void setup_gpio()
 
 void setup_rtc()
     {
-    if (! rtc.begin())
-        Serial.println("RTC failed to intiailize");
+    if (! gClock.begin())
+        gCatena.SafePrintf("RTC failed to intialize\n");
 
-    DateTime now = rtc.now();
-    gCatena.SafePrintf("RTC is %s. Date: %d-%02d-%02d %02d:%02d:%02d\n",
-        rtc.initialized() ? "running" : "not initialized",
-        now.year(), now.month(), now.day(),
-        now.hour(), now.minute(), now.second()
-        );
+    cDate d;
+    if (! gClock.get(d))
+        gCatena.SafePrintf("RTC is not running\n");
+    else
+        {
+        gCatena.SafePrintf("RTC is running. Date: %d-%02d-%02d %02d:%02d:%02dZ\n",
+            d.year(), d.month(), d.day(),
+            d.hour(), d.minute(), d.second()
+            );
+        }
     }
 
 void setup_flash(void)

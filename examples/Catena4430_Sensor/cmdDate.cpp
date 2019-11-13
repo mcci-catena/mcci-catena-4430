@@ -72,6 +72,7 @@ cCommandStream::CommandStatus cmdDate(
         bool fResult;
         cDate d;
         bool fInitialized = gClock.isInitialized();
+        const char *pEnd;
 
         if (fInitialized)
             {
@@ -88,9 +89,10 @@ cCommandStream::CommandStatus cmdDate(
             if (! fInitialized)
                 pThis->printf("clock not initialized\n");
             else
-                pThis->printf("%04u-%02u-%02u %02u:%02u:%02u\n",
+                pThis->printf("%04u-%02u-%02u %02u:%02u:%02uZ (GPS: %lu)\n",
                     d.year(), d.month(), d.day(),
-                    d.hour(), d.minute(), d.second()
+                    d.hour(), d.minute(), d.second(),
+                    static_cast<unsigned long>(d.getGpsTime())
                     );
 
             return cCommandStream::CommandStatus::kSuccess;
@@ -107,17 +109,32 @@ cCommandStream::CommandStatus cmdDate(
             {
             if (d.parseDateIso8601(argv[1]))
                 {
-                if (argv[2] != nullptr && ! d.parseTime(argv[2]))
+                if (argv[2] != nullptr && ! d.parseTime(argv[2], &pEnd))
                     {
                     pThis->printf("invalid time after date: %s\n", argv[2]);
                     fResult = false;
                     }
+                else if (argv[2] != nullptr)
+                    {
+                    if (pEnd == NULL ||
+                        ! ((pEnd[0] == 'z' || pEnd[0] == 'Z') && pEnd[1] == '\0'))
+                        {
+                        pThis->printf("expected Z suffix to remind you it's UTC+0 (GMT) time\n");
+                        fResult = false;
+                        }
+                    }
                 }
-            else if (d.parseTime(argv[1]))
+            else if (d.parseTime(argv[1], &pEnd))
                 {
                 if (argv[2] != nullptr);
                     {
                     pThis->printf("nothing allowed after time: %s\n", argv[2]);
+                    fResult = false;
+                    }
+                if (pEnd == NULL ||
+                    ! ((pEnd[0] == 'z' || pEnd[0] == 'Z') && pEnd[1] == '\0'))
+                    {
+                    pThis->printf("expected Z suffix to remind you it's UTC+0 (GMT) time\n");
                     fResult = false;
                     }
                 }
