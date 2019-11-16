@@ -15,6 +15,7 @@ Author:
 
 #include "Catena4430_cMeasurementLoop.h"
 
+#include <Catena4430.h>
 #include <arduino_lmic.h>
 
 using namespace McciCatena4430;
@@ -36,6 +37,7 @@ void cMeasurementLoop::begin()
 
         this->m_UplinkTimer.begin(this->m_txCycleSec * 1000);
         this->m_pirSampleTimer.begin(this->m_pirSampleSec * 1000);
+        this->m_ActivityTimer.begin(this->m_ActivityTimerSec * 1000);
         }
 
     // start and initialize the PIR sensor
@@ -55,10 +57,7 @@ void cMeasurementLoop::begin()
     if (this->m_si1133.begin())
         {
         this->m_fSi1133 = true;
-        this->m_si1133.configure(0, CATENA_SI1133_MODE_SmallIR);
-        this->m_si1133.configure(1, CATENA_SI1133_MODE_White);
-        this->m_si1133.configure(2, CATENA_SI1133_MODE_UV);
-        this->m_si1133.start();
+        this->m_si1133.configure(0, CATENA_SI1133_MODE_White);
         }
     else
         {
@@ -112,6 +111,7 @@ cMeasurementLoop::fsmDispatch(
         {
     case State::stInitial:
         newState = State::stInactive;
+        this->resetMeasurements();
         break;
 
     case State::stInactive:
@@ -152,7 +152,7 @@ cMeasurementLoop::fsmDispatch(
             this->sleep();
         break;
 
-    // get some data
+    // get some data. This is only called while booting up.
     case State::stWarmup:
         if (fEntry)
             {
@@ -165,10 +165,11 @@ cMeasurementLoop::fsmDispatch(
             newState = State::stMeasure;
         break;
 
+    // fill in the measurement
     case State::stMeasure:
         if (fEntry)
             {
-            // start SI1133 measurement
+            // start SI1133 measurement (one-time)
             this->m_si1133.start(true);
             this->updateSynchronousMeasurements();
             this->setTimer(100);
@@ -193,6 +194,7 @@ cMeasurementLoop::fsmDispatch(
             {
             TxBuffer_t b;
             this->fillTxBuffer(b);
+            this->resetMeasurements();
             this->startTransmission(b);
             }
         if (this->txComplete())
@@ -220,15 +222,18 @@ cMeasurementLoop::fsmDispatch(
 |
 \****************************************************************************/
 
-void cMeasurementLoop::updateSynchronousMeasurements()
+void cMeasurementLoop::resetMeasurements()
     {
     memset((void *) &this->m_data, 0, sizeof(this->m_data));
     this->m_data.flags = Flags(0);
+    }
 
-    this->m_data.vBat = gCatena.ReadVbat();
+void cMeasurementLoop::updateSynchronousMeasurements()
+    {
+    this->m_data.Vbat = gCatena.ReadVbat();
     this->m_data.flags |= Flags::Vbat;
 
-    this->m_data.vBus = gCatena.ReadVbus();
+    this->m_data.Vbus = gCatena.ReadVbus();
     this->m_data.flags |= Flags::Vbus;
 
     if (gCatena.getBootCount(this->m_data.BootCount))
@@ -247,25 +252,50 @@ void cMeasurementLoop::updateSynchronousMeasurements()
 
     // SI1133 is handled separately
 
-    // update activity
+    // update activity -- this is is already handled elsewhere
+
+    // grab data on pellets.
+
+    // grab time of last activity update.
+    gClock.get(this->m_data.DateTime);
+    }
+
+void cMeasurementLoop::measureActivity()
+    {
+    if (this->m_data.nActivity == this->kMaxActivityEntries)
+        {
+        // make room by deleting first entry
+        for (unsigned i = 0; i < this->kMaxActivityEntries - 1; ++i)
+            this->m_data.activity[i] = this->m_data.activity[i+1];
+
+        this->m_data.nActivity = this->kMaxActivityEntries - 1;
+        }
+
+    // get another measurement.
     uint32_t const tDelta = this->m_pirLastTimeMs - this->m_pirBaseTimeMs;
-    this->m_data.activity.Avg = this->m_pirSum / tDelta;
-    this->m_data.activity.Max = this->m_pirMax;
-    this->m_data.activity.Min = this->m_pirMin;
+    this->m_data.activity[this->m_data.nActivity++].Avg = this->m_pirSum / tDelta;
     this->m_data.flags |= Flags::Activity;
+
+    // record time. Since a zero timevalue is always invalid, we don't
+    // need to check validity.
+    (void) gClock.get(this->m_data.DateTime);
+
+    // start new measurement.
+    this->m_pirBaseTimeMs = this->m_pirLastTimeMs;
+    this->m_pirMax = -1.0f;
+    this->m_pirMin = 1.0f;
+    this->m_pirSum = 0.0f;
     }
 
 void cMeasurementLoop::updateLightMeasurements()
     {
-    uint16_t data[3];
+    uint16_t data[1];
 
-    this->m_si1133.readMultiChannelData(data, 3);
+    this->m_si1133.readMultiChannelData(data, 1);
     this->m_si1133.stop();
 
     this->m_data.flags |= Flags::Light;
-    this->m_data.light.IR = data[0];
-    this->m_data.light.White = data[1];
-    this->m_data.light.UV = data[2];
+    this->m_data.light.White = data[0];
     }
 
 void cMeasurementLoop::resetPirAccumulation()
@@ -291,98 +321,6 @@ void cMeasurementLoop::accumulatePirData()
     deltaT = thisTimeMs - this->m_pirLastTimeMs;
     this->m_pirSum += v * deltaT;
     this->m_pirLastTimeMs = thisTimeMs;
-    }
-
-/****************************************************************************\
-|
-|   Prepare a buffer to be transmitted.
-|
-\****************************************************************************/
-
-void cMeasurementLoop::fillTxBuffer(cMeasurementLoop::TxBuffer_t& b)
-    {
-    auto const savedLed = gLed.Set(McciCatena::LedPattern::Measuring);
-
-    b.begin();
-
-    // insert format byte
-    b.put(kMessageFormat);
-    b.put(std::uint8_t(this->m_data.flags));
-
-    // send Vbat
-    if ((this->m_data.flags & Flags::Vbat) != Flags(0))
-        {
-        float Vbat = this->m_data.vBat;
-        gCatena.SafePrintf("Vbat:    %d mV\n", (int) (Vbat * 1000.0f));
-        b.putV(Vbat);
-        }
-
-    // send Vdd if we can measure it.
-
-    // vBus is sent as 5000 * v
-    if ((this->m_data.flags & Flags::Vbus) != Flags(0))
-        {
-        float Vbus = this->m_data.vBus;
-        gCatena.SafePrintf("Vbus:    %d mV\n", (int) (Vbus * 1000.0f));
-        b.putV(Vbus);
-        }
-
-    // send boot count
-    if ((this->m_data.flags & Flags::Boot) != Flags(0))
-        {
-        b.putBootCountLsb(this->m_data.BootCount);
-        }
-
-    if ((this->m_data.flags & Flags::TPH) != Flags(0))
-        {
-        gCatena.SafePrintf(
-                "BME280:  T: %d P: %d RH: %d\n",
-                (int) this->m_data.env.Temperature,
-                (int) this->m_data.env.Pressure,
-                (int) this->m_data.env.Humidity
-                );
-        b.putT(this->m_data.env.Temperature);
-        b.putP(this->m_data.env.Pressure);
-        // no method for 2-byte RH, directly encode it.
-        b.put2uf((this->m_data.env.Humidity / 100.0f) * 65535.0f);
-        }
-
-    // put light
-    if ((this->m_data.flags & Flags::Light) != Flags(0))
-        {
-        gCatena.SafePrintf(
-                "Si1133:  %u IR, %u White, %u UV\n",
-                this->m_data.light.IR,
-                this->m_data.light.White,
-                this->m_data.light.UV
-                );
-
-        b.putLux(this->m_data.light.IR);
-        b.putLux(this->m_data.light.White);
-        b.putLux(this->m_data.light.UV);
-        }
-
-    // put activity
-    if ((this->m_data.flags & Flags::Activity) != Flags(0))
-        {
-        // scale to 0..1
-        float aMin = this->m_data.activity.Min;
-        float aMax = this->m_data.activity.Max;
-        float aAvg = this->m_data.activity.Avg;
-
-        gCatena.SafePrintf(
-                "Activity [0..1000):  %d min %d max %d Avg\n",
-                500 + int(500 * aMin), 
-                500 + int(500 * aMax),
-                500 + int(500 * aAvg)
-                );
-
-        b.put2uf(LMIC_f2sflt16(aAvg));
-        b.put2uf(LMIC_f2sflt16(aMin));
-        b.put2uf(LMIC_f2sflt16(aMax));
-        }
-
-    gLed.Set(savedLed);
     }
 
 /****************************************************************************\
@@ -464,6 +402,15 @@ void cMeasurementLoop::poll()
         {
         // timer has fired. grab data
         this->accumulatePirData();
+        }
+
+    // record PIR m_pirSampleSec
+    if (this->m_ActivityTimer.isready())
+        {
+        // time to record another minute of data.
+        this->measureActivity();
+        if (this->m_data.nActivity == this->kMaxActivityEntries)
+            fEvent = true;
         }
 
     if (this->m_fTimerActive)
