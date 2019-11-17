@@ -257,22 +257,23 @@ function Decoder(bytes, port) {
     // i is used as the index into the message. Start with the time.
     Parse.i = 1;
 
-    // fetch time
-    decoded.time = DecodeU32(Parse) * 1000;
+    // fetch time, convert from GPS to ISO time assuming 17 leap seconds,
+    // and then convert to JSON format.
+    decoded.time = new Date((DecodeU32(Parse) + 315964800 - 17) * 1000).toJSON();
 
     // fetch the bitmap.
     var flags = bytes[Parse.i++];
 
     if (flags & 0x1) {
-        decoded.vBat = DecodeV(Parse);
+        decoded.Vbat = DecodeV(Parse);
     }
 
     if (flags & 0x2) {
-        decoded.vSys = DecodeV(Parse);
+        decoded.Vsys = DecodeV(Parse);
     }
 
     if (flags & 0x4) {
-        decoded.vBus = DecodeV(Parse);
+        decoded.Vsys = DecodeV(Parse);
     }
 
     if (flags & 0x8) {
