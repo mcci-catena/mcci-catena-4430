@@ -34,6 +34,7 @@ Author:
 #include <Catena.h>
 #include <mcciadk_baselib.h>
 #include <stdlib.h>
+#include "Catena4430_cPelletFeeder.h"
 #include "Catena4430_cPIRdigital.h"
 #include <Catena_Date.h>
 
@@ -206,6 +207,7 @@ public:
     static constexpr bool kEnableDeepSleep = false;
     static constexpr unsigned kMaxActivityEntries = 8;
     using MeasurementFormat = cMeasurementFormat22<kMaxActivityEntries>;
+    static constexpr unsigned kMaxPelletEntries = MeasurementFormat::kMaxPelletEntries;
     using Measurement = MeasurementFormat::Measurement;
     using Flags = MeasurementFormat::Flags;
     static constexpr std::uint8_t kMessageFormat = MeasurementFormat::kMessageFormat;
@@ -413,6 +415,9 @@ private:
     std::uint32_t                   m_pirBaseTimeMs;
     std::uint32_t                   m_pirLastTimeMs;
     std::uint32_t                   m_pirSampleSec;
+
+    // Pellet Feeder
+    cPelletFeeder                   m_PelletFeeder;
 
     // activity time control
     McciCatena::cTimer              m_ActivityTimer;

@@ -43,6 +43,9 @@ void cMeasurementLoop::begin()
     // start and initialize the PIR sensor
     this->m_pir.begin(gCatena);
 
+    // start and initialize pellet feeder monitoring.
+    this->m_PelletFeeder.begin(gCatena);
+
     Wire.begin();
     if (this->m_BME280.begin(BME280_ADDRESS, Adafruit_BME280::OPERATING_MODE::Sleep))
         {
@@ -255,6 +258,16 @@ void cMeasurementLoop::updateSynchronousMeasurements()
     // update activity -- this is is already handled elsewhere
 
     // grab data on pellets.
+    cPelletFeeder::PelletFeederData data;
+    this->m_PelletFeeder.readAndReset(data);
+    this->m_data.flags |= Flags::Pellets;
+
+    // fill in the measurement.
+    for (unsigned i = 0; i < kMaxPelletEntries; ++i)
+        {
+        this->m_data.pellets[i].Total = data.feeder[i].total;
+        this->m_data.pellets[i].Recent = data.feeder[i].current;
+        }
 
     // grab time of last activity update.
     gClock.get(this->m_data.DateTime);
