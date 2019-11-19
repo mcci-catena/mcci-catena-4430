@@ -166,18 +166,20 @@ cMeasurementLoop::writeSdCard(
 
             	auto const pFram = gCatena.getFram();
 
-                // use devEUI, or sysEUI, or give up.
+                // use devEUI.
                 if (pFram != nullptr &&
-                    (pFram->getField(cFramStorage::StandardKeys::kDevEUI, devEUI) ||
-                     pFram->getField(cFramStorage::StandardKeys::kSysEUI, devEUI)
-                    ))
+                    pFram->getField(cFramStorage::StandardKeys::kDevEUI, devEUI))
                     {
                     dataFile.print('"');
                     
                     /* write the devEUI */
-                    for (auto c : devEUI.b)
+                    for (auto i = 0; i < sizeof(devEUI.b); ++i)
                         {
-                        McciAdkLib_Snprintf(buf, sizeof(buf), 0, "%02x", c);
+                        // the devEUI is stored in little-endian order.
+                        McciAdkLib_Snprintf(
+                            buf, sizeof(buf), 0, 
+                            "%02x", devEUI.b[sizeof(devEUI.b) - i - 1]
+                            );
                         dataFile.print(buf);
                         }
 
