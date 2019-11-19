@@ -39,7 +39,7 @@ Description:
 
 void
 cMeasurementLoop::fillTxBuffer(
-    cMeasurementLoop::TxBuffer_t& b
+    cMeasurementLoop::TxBuffer_t& b, Measurement const &mData
     )
     {
     auto const savedLed = gLed.Set(McciCatena::LedPattern::Measuring);
@@ -52,15 +52,15 @@ cMeasurementLoop::fillTxBuffer(
 
     // insert the timestamp from the data
     // stuff zero if time is not valid.
-    b.put4u(std::uint32_t(this->m_data.DateTime.getGpsTime()));
+    b.put4u(std::uint32_t(mData.DateTime.getGpsTime()));
 
     // the flags in Measurement correspond to the over-the-air flags.
-    b.put(std::uint8_t(this->m_data.flags));
+    b.put(std::uint8_t(mData.flags));
 
     // send Vbat
-    if ((this->m_data.flags & Flags::Vbat) != Flags(0))
+    if ((mData.flags & Flags::Vbat) != Flags(0))
         {
-        float Vbat = this->m_data.Vbat;
+        float Vbat = mData.Vbat;
         gCatena.SafePrintf("Vbat:    %d mV\n", (int) (Vbat * 1000.0f));
         b.putV(Vbat);
         }
@@ -68,61 +68,61 @@ cMeasurementLoop::fillTxBuffer(
     // send Vdd if we can measure it.
 
     // Vbus is sent as 5000 * v
-    if ((this->m_data.flags & Flags::Vbus) != Flags(0))
+    if ((mData.flags & Flags::Vbus) != Flags(0))
         {
-        float Vbus = this->m_data.Vbus;
+        float Vbus = mData.Vbus;
         gCatena.SafePrintf("Vbus:    %d mV\n", (int) (Vbus * 1000.0f));
         b.putV(Vbus);
         }
 
     // send boot count
-    if ((this->m_data.flags & Flags::Boot) != Flags(0))
+    if ((mData.flags & Flags::Boot) != Flags(0))
         {
-        b.putBootCountLsb(this->m_data.BootCount);
+        b.putBootCountLsb(mData.BootCount);
         }
 
-    if ((this->m_data.flags & Flags::TPH) != Flags(0))
+    if ((mData.flags & Flags::TPH) != Flags(0))
         {
         gCatena.SafePrintf(
                 "BME280:  T: %d P: %d RH: %d\n",
-                (int) this->m_data.env.Temperature,
-                (int) this->m_data.env.Pressure,
-                (int) this->m_data.env.Humidity
+                (int) mData.env.Temperature,
+                (int) mData.env.Pressure,
+                (int) mData.env.Humidity
                 );
-        b.putT(this->m_data.env.Temperature);
-        b.putP(this->m_data.env.Pressure);
+        b.putT(mData.env.Temperature);
+        b.putP(mData.env.Pressure);
         // no method for 2-byte RH, directly encode it.
-        b.put2uf((this->m_data.env.Humidity / 100.0f) * 65535.0f);
+        b.put2uf((mData.env.Humidity / 100.0f) * 65535.0f);
         }
 
     // put light
-    if ((this->m_data.flags & Flags::Light) != Flags(0))
+    if ((mData.flags & Flags::Light) != Flags(0))
         {
         gCatena.SafePrintf(
                 "Si1133:  %u White\n",
-                this->m_data.light.White
+                mData.light.White
                 );
 
-        b.putLux(this->m_data.light.White);
+        b.putLux(mData.light.White);
         }
 
     // put pellets
-    if ((this->m_data.flags & Flags::Pellets) != Flags(0))
+    if ((mData.flags & Flags::Pellets) != Flags(0))
         {
         for (unsigned i = 0; i < MeasurementFormat::kMaxPelletEntries; ++i)
             {
-            b.put2(this->m_data.pellets[i].Total & 0xFFFFu);
-            b.put(this->m_data.pellets[i].Recent);
+            b.put2(mData.pellets[i].Total & 0xFFFFu);
+            b.put(mData.pellets[i].Recent);
             }
         }
 
     // put activity
-    if ((this->m_data.flags & Flags::Activity) != Flags(0))
+    if ((mData.flags & Flags::Activity) != Flags(0))
         {
-        for (unsigned i = 0; i < this->m_data.nActivity; ++i)
+        for (unsigned i = 0; i < mData.nActivity; ++i)
             {
             // scale to 0..1
-            float aAvg = this->m_data.activity[i].Avg;
+            float aAvg = mData.activity[i].Avg;
 
             gCatena.SafePrintf(
                 "Activity[%u] [0..1000):  %d Avg\n",

@@ -196,17 +196,53 @@ cMeasurementLoop::fsmDispatch(
         if (fEntry)
             {
             TxBuffer_t b;
-            this->fillTxBuffer(b);
+            this->fillTxBuffer(b, this->m_data);
+            this->m_FileData = this->m_data;
+
+            this->m_FileTxBuffer.begin();
+            for (auto i = 0; i < b.getn(); ++i)
+                this->m_FileTxBuffer.put(b.getbase()[i]);
+
             this->resetMeasurements();
-            this->startTransmission(b);
+
+            if (gLoRaWAN.IsProvisioned())
+                this->startTransmission(b);
+            }
+        if (! gLoRaWAN.IsProvisioned())
+            {
+            newState = State::stWriteFile;
             }
         if (this->txComplete())
             {
-            newState = State::stSleeping;
+            newState = State::stWriteFile;
 
             // calculate the new sleep interval.
             this->updateTxCycleTime();
             }
+        break;
+
+    // if there's an SD card, append to file
+    case State::stWriteFile:
+        if (fEntry)
+            {
+            }
+
+        if (this->writeSdCard(this->m_FileTxBuffer, this->m_FileData))
+            newState = State::stSleeping;
+        else if (gLoRaWAN.IsProvisioned())
+            newState = State::stSleeping;
+        else
+            newState = State::stAwaitCard;
+        break;
+
+    // no SD card.... 
+    case State::stAwaitCard:
+        if (fEntry)
+            {
+            gCatena.SafePrintf("** no SD card and not provisioned!\n");
+            }
+
+        newState = State::stSleeping;
         break;
 
     case State::stFinal:

@@ -20,6 +20,7 @@ Author:
 #include <SPI.h>
 #include <arduino_lmic.h>
 #include <Catena_Timer.h>
+#include <Catena4430.h>
 #include <Catena4430_cPCA9570.h>
 #include <Catena4430_c4430Gpios.h>
 #include <Catena4430_cPIRdigital.h>
@@ -35,6 +36,8 @@ static_assert(
     CATENA_ARDUINO_PLATFORM_VERSION >= CATENA_ARDUINO_PLATFORM_VERSION_CALC(0, 17, 0, 40),
     "This sketch requires Catena-Arduino-Platform v0.17.0.40 or later"
     );
+
+constexpr std::uint32_t kAppVersion = makeVersion(0,3,1,0);
 
 /****************************************************************************\
 |
@@ -143,14 +146,19 @@ void setup_printSignOn()
 
     gCatena.SafePrintf("\n%s%s\n", dashes, dashes);
 
-    gCatena.SafePrintf("This is %s.\n", filebasename(__FILE__));
+    gCatena.SafePrintf("This is %s v%d.%d.%d.%d.\n",
+        filebasename(__FILE__),
+        getMajor(kAppVersion), getMinor(kAppVersion), getPatch(kAppVersion), getLocal(kAppVersion)
+        );
+
+    do
         {
         char sRegion[16];
         gCatena.SafePrintf("Target network: %s / %s\n",
                         gLoRaWAN.GetNetworkName(),
                         gLoRaWAN.GetRegionString(sRegion, sizeof(sRegion))
                         );
-        }
+        } while (0);
 
     gCatena.SafePrintf("System clock rate is %u.%03u MHz\n",
         ((unsigned)gCatena.GetSystemClockRate() / (1000*1000)),
@@ -237,13 +245,7 @@ void setup_commands()
 
 void setup_start()
     {
-    if (gLoRaWAN.IsProvisioned())
-        gMeasurementLoop.requestActive(true);
-    else
-        {
-        gCatena.SafePrintf("not provisioned, idling\n");
-        gMeasurementLoop.requestActive(false);
-        }
+    gMeasurementLoop.requestActive(true);
     }
 
 /****************************************************************************\

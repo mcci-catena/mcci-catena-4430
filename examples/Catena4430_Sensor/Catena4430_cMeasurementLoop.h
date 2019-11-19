@@ -211,6 +211,7 @@ public:
     using Measurement = MeasurementFormat::Measurement;
     using Flags = MeasurementFormat::Flags;
     static constexpr std::uint8_t kMessageFormat = MeasurementFormat::kMessageFormat;
+    static constexpr std::uint8_t kSdCardCSpin = D5;
 
     enum DebugFlags : std::uint32_t
         {
@@ -246,6 +247,8 @@ public:
         stWarmup,       // transition from inactive to measure, get some data.
         stMeasure,      // take measurents
         stTransmit,     // transmit data
+        stWriteFile,    // write file data
+        stAwaitCard,    // wait for a card to show up.
 
         stFinal,        // this name must be present, it's the terminal state.
         };
@@ -261,6 +264,8 @@ public:
         case State::stWarmup:   return "stWarmup";
         case State::stMeasure:  return "stMeasure";
         case State::stTransmit: return "stTransmit";
+        case State::stWriteFile: return "stWriteFile";
+        case State::stAwaitCard: return "stAwaitCard";
         case State::stFinal:    return "stFinal";
         default:                return "<<unknown>>";
             }
@@ -330,7 +335,7 @@ private:
     void measureActivity();
 
     // telemetry handling.
-    void fillTxBuffer(TxBuffer_t &b);
+    void fillTxBuffer(TxBuffer_t &b, Measurement const & mData);
     void startTransmission(TxBuffer_t &b);
     void sendBufferDone(bool fSuccess);
     bool txComplete()
@@ -341,8 +346,12 @@ private:
         {
         return McciCatena::TxBuffer_t::f2uflt16(v);
         }
-
     void updateTxCycleTime();
+
+    // SD card handling
+    bool initSdCard();
+    bool checkSdCard();
+    bool writeSdCard(TxBuffer_t &b, Measurement const &mData);
 
     // pir handling
     void resetPirAccumulation(void);
@@ -435,6 +444,10 @@ private:
 
     // the current measurement
     Measurement                     m_data;
+
+    // the data to write to the file
+    Measurement                     m_FileData;
+    TxBuffer_t                      m_FileTxBuffer;
     };
 
 //
