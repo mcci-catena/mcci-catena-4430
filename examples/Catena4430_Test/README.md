@@ -29,5 +29,6 @@ Libraries to support the Catena 4610:
 - [mcci-catena/arduino-lorawan](https://github.com/mcci-catena/arduino-lorawan/)
 - [mcci-catena/Catena-mcciadk](https://github.com/mcci-catena/Catena-mcciadk/)
 - [mcci-catena/arduino-lmic](https://github.com/mcci-catena/arduino-lmic/)
-- [mcci-catena/Adafruit_FRAM_I2C](https://github.com/mcci-catena/Adafruit_FRAM_I2C/)
+- [mcci-catena/MCCI_FRAM_I2C](https://github.com/mcci-catena/MCCI_FRAM_I2C/)
 - [mcci-catena/Adafruit_BME280_Library](https://github.com/mcci-catena/Adafruit_BME280_Library/)
+- [mcci-catena/Adafruit_Sensor](https://github.com/mcci-catena/Adafruit_Sensor.git)
