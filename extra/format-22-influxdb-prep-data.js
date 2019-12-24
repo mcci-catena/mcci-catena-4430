@@ -106,6 +106,12 @@ for (var i in tag_keys) {
         tags[key] = msg.payload[key];
 }
 
+// manually process msg.counter. This really should be called FCntUp
+// to match the network!
+if ("counter" in msg) {
+    insert_value(fields, "counter", msg.counter);
+}
+
 // now create points for the activity measurements. Each one was taken one
 // minute previously (going back in time).
 if ("activity" in msg.payload) {
