@@ -17,4 +17,3 @@ github.com	mcci-catena/Adafruit_Sensor.git
 
 # the following are needed for the 4430 function.
 github.com	mcci-catena/SD.git
-github.com	mcci-catena/RTClib.git
