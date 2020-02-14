@@ -147,7 +147,20 @@ cMeasurementLoop::writeSdCard(
                 {
                 //gCatena.SafePrintf("write header\n");
                 for (auto i : kHeader)
-                    dataFile.print(i);
+                    {
+                    if (i == '\n')
+                        {
+                        dataFile.println();
+                        }
+                    else if (i == '\0')
+                        {
+                        break;
+                        }
+                    else
+                        {
+                        dataFile.print(i);
+                        }
+                    }
                 }
             
             char buf[32];
