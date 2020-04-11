@@ -13,7 +13,7 @@ Author:
 
 */
 
-// this could be `#include "catena-message-port1-format-21-decoder-ttn.js"`
+// this could be `#include "catena-message-port1-format-22-decoder-ttn.js"`
 // but that's not a thing.
 // calculate dewpoint (degrees C) given temperature (C) and relative humidity (0..100)
 // from http://andrew.rsmas.miami.edu/bmcnoldy/Humidity.html

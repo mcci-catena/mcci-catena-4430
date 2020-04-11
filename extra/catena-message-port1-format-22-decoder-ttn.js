@@ -1,15 +1,15 @@
 /*
 
-Name:   catena-message-port1-format-21-decoder-ttn.js
+Name:   catena-message-port1-format-22-decoder-ttn.js
 
 Function:
-    Decode port 0x01 format 0x21 messages for TTN console.
+    Decode port 0x01 format 0x22 messages for TTN console.
 
 Copyright and License:
     See accompanying LICENSE file at https://github.com/mcci-catena/MCCI-Catena-4430/
 
 Author:
-    Terry Moore, MCCI Corporation   August 2019
+    Terry Moore, MCCI Corporation   October 2019
 
 */
 
