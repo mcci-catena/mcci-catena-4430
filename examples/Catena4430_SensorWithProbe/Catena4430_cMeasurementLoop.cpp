@@ -218,7 +218,7 @@ cMeasurementLoop::fsmDispatch(
             this->updateSynchronousMeasurements();
             this->setTimer(100);
             }
-        
+
         if (this->m_si1133.isOneTimeReady())
             {
             this->updateLightMeasurements();
@@ -276,7 +276,7 @@ cMeasurementLoop::fsmDispatch(
             newState = State::stAwaitCard;
         break;
 
-    // no SD card.... 
+    // no SD card....
     case State::stAwaitCard:
         if (fEntry)
             {
@@ -292,7 +292,7 @@ cMeasurementLoop::fsmDispatch(
     default:
         break;
         }
-    
+
     return newState;
     }
 
@@ -456,7 +456,7 @@ void cMeasurementLoop::sendBufferDone(bool fSuccess)
 
 /****************************************************************************\
 |
-|   The Polling function -- 
+|   The Polling function --
 |
 \****************************************************************************/
 
@@ -515,7 +515,7 @@ void cMeasurementLoop::poll()
 
 /****************************************************************************\
 |
-|   Update the TxCycle count. 
+|   Update the TxCycle count.
 |
 \****************************************************************************/
 
@@ -544,7 +544,7 @@ void cMeasurementLoop::updateTxCycleTime()
 
 /****************************************************************************\
 |
-|   Handle sleep between measurements 
+|   Handle sleep between measurements
 |
 \****************************************************************************/
 
@@ -692,7 +692,7 @@ void cMeasurementLoop::deepSleepRecovery(void)
 
 /****************************************************************************\
 |
-|  Time-out asynchronous measurements. 
+|  Time-out asynchronous measurements.
 |
 \****************************************************************************/
 

@@ -51,7 +51,7 @@ namespace McciCatena4430 {
 
 class cMeasurementBase
     {
-    
+
     };
 
 template <unsigned a_kMaxActivityEntries>
@@ -81,7 +81,7 @@ public:
         //----------------
         // the subtypes:
         //----------------
-        
+
         // environmental measurements
         struct Env
             {
@@ -112,7 +112,7 @@ public:
             {
             float                   Avg;
             };
-            
+
         //---------------------------
         // the actual members as POD
         //---------------------------
@@ -248,7 +248,7 @@ public:
     virtual void poll() override;
     void setBme280(bool fEnable)
         {
-        this->m_fBme280 = fEnable; 
+        this->m_fBme280 = fEnable;
         }
     void setVbus(float Vbus)
         {
@@ -313,7 +313,7 @@ private:
     void accumulatePirData(void);
 
     // timeout handling
- 
+
     // set the timer
     void setTimer(std::uint32_t ms);
     // clear the timer
