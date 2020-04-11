@@ -293,8 +293,8 @@ function Decoder(bytes, port) {
 Node-RED function body.
 
 Input:
-    msg     the object to be decoded.  
-    
+    msg     the object to be decoded.
+
             msg.payload_raw is taken
             as the raw payload if present; otheriwse msg.payload
             is taken to be a raw payload.
