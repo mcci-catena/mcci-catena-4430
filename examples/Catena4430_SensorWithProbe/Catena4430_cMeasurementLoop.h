@@ -18,8 +18,6 @@ Author:
 
 #pragma once
 
-#include "Catena4430_cMeasurementLoop.h"
-
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_BME280.h>
@@ -34,11 +32,10 @@ Author:
 #include <Catena.h>
 #include <mcciadk_baselib.h>
 #include <stdlib.h>
-#include "Catena4430_cPelletFeeder.h"
 #include "Catena4430_cPIRdigital.h"
 #include <Catena_Date.h>
-#include <DallasTemperature.h>
 #include <cstdint>
+#include "Catena4430_cProbe.h"
 
 extern McciCatena::Catena gCatena;
 extern McciCatena::Catena::LoRaWAN gLoRaWAN;
@@ -55,148 +52,6 @@ namespace McciCatena4430 {
 class cMeasurementBase
     {
     
-    };
-
-class cMeasurementFormat21
-    {
-public:
-    static constexpr uint8_t kMessageFormat = 0x22;
-    enum class Flags : uint8_t
-        {
-        Vbat = 1 << 0,      // vBat
-        Vcc = 1 << 1,       // system voltage
-        Vbus = 1 << 2,      // Vbus input
-        Boot = 1 << 3,      // boot count
-        TPH = 1 << 4,       // temperature, pressure, humidity
-        Light = 1 << 5,     // light (IR, white, UV)
-        Activity = 1 << 6,  // Activity (min/max/avg)
-        };
-
-    // buffer size for uplink data
-    static constexpr size_t kTxBufferSize = 36;
-
-    // the structure of a measurement
-    struct Measurement
-        {
-        McciCatena::cDate           DateTime;
-        cMeasurementFormat21::Flags  flags;
-        float                       vBat;
-        float                       vSystem;
-        float                       vBus;
-        uint32_t                    BootCount;
-        struct Env
-            {
-            float                   Temperature;
-            float                   Pressure;
-            float                   Humidity;
-            } env;
-        struct Light
-            {
-            std::uint16_t           IR;
-            std::uint16_t           White;
-            std::uint16_t           UV;
-            } light;
-        struct Activity
-            {
-            float                   Min;
-            float                   Max;
-            float                   Avg;
-            } activity;
-        };
-    };
-
-
-template <unsigned a_kMaxActivityEntries>
-class cMeasurementFormat22 : public cMeasurementBase
-    {
-public:
-    static constexpr uint8_t kMessageFormat = 0x22;
-
-    enum class Flags : uint8_t
-            {
-            Vbat = 1 << 0,      // vBat
-            Vcc = 1 << 1,       // system voltage
-            Vbus = 1 << 2,      // Vbus input
-            Boot = 1 << 3,      // boot count
-            TPH = 1 << 4,       // temperature, pressure, humidity
-            Light = 1 << 5,     // light (IR, white, UV)
-            Pellets = 1 << 6,   // Pellet count
-            Activity = 1 << 7,  // Activity (min/max/avg)
-            };
-
-    static constexpr unsigned kMaxActivityEntries = a_kMaxActivityEntries;
-    static constexpr unsigned kMaxPelletEntries = 2;
-    static constexpr size_t kTxBufferSize = (1 + 4 + 1 + 2 + 2 + 2 + 1 + 6 + 2 + 6 + kMaxActivityEntries * 2);
-
-    // the structure of a measurement
-    struct Measurement
-        {
-        //----------------
-        // the subtypes:
-        //----------------
-        
-        // environmental measurements
-        struct Env
-            {
-            // temperature (in degrees C)
-            float                   Temperature;
-            // pressure (in millibars/hPa)
-            float                   Pressure;
-            // humidity (in % RH)
-            float                   Humidity;
-            };
-
-        // ambient light measurements
-        struct Light
-            {
-            // "white" light, in w/m^2
-            std::uint16_t           White;
-            };
-
-        // count of food pellets
-        struct Pellets
-            {
-            // the running total since boot.
-            std::uint32_t           Total;
-            // count of pellets since last measurement.
-            std::uint8_t            Recent;
-            };
-
-        // activity: -1 to 1 (for inactive to active)
-        struct Activity
-            {
-            float                   Avg;
-            };
-            
-        //---------------------------
-        // the actual members as POD
-        //---------------------------
-
-        // time of most recent activity measurement
-        McciCatena::cDate           DateTime;
-
-        // flags of entries that are valid.
-        Flags                       flags;
-        // count of valid activity measurements
-        std::uint8_t                nActivity;
-
-        // measured battery voltage, in volts
-        float                       Vbat;
-        // measured system Vdd voltage, in volts
-        float                       Vsystem;
-        // measured USB bus voltage, in volts.
-        float                       Vbus;
-        // boot count
-        uint32_t                    BootCount;
-        // environmental data
-        Env                         env;
-        // ambient light
-        Light                       light;
-        // food pellet tracking.
-        Pellets                     pellets[kMaxPelletEntries];
-        // array of potential activity measurements.
-        Activity                    activity[kMaxActivityEntries];
-        };
     };
 
 template <unsigned a_kMaxActivityEntries>
@@ -289,6 +144,7 @@ public:
         };
     };
 
+
 class cMeasurementLoop : public McciCatena::cPollableObject
     {
 public:
@@ -322,7 +178,6 @@ public:
         , m_DebugFlags(DebugFlags(kError | kTrace))
         , m_ActivityTimerSec(60)            // the activity time sample interval
         , m_oneWire(kTprobePin)             // the OneWire interface
-        , m_probes(&this->m_oneWire)        // the temperature probes.
         {};
 
     // neither copyable nor movable
@@ -338,7 +193,9 @@ public:
         stInactive,     // parked; not doing anything.
         stSleeping,     // active; sleeping between measurements
         stWarmup,       // transition from inactive to measure, get some data.
-        stMeasure,      // take measurents
+        stTprobePowerOn,// power on DS18B20
+        stTprobeMeasuring, // probe is stTprobeMeasuring
+        stMeasure,      // take on-board measurents
         stTransmit,     // transmit data
         stWriteFile,    // write file data
         stAwaitCard,    // wait for a card to show up.
@@ -355,6 +212,8 @@ public:
         case State::stInactive: return "stInactive";
         case State::stSleeping: return "stSleeping";
         case State::stWarmup:   return "stWarmup";
+        case State::stTprobePowerOn:   return "stTprobePowerOn";
+        case State::stTprobeMeasuring: return "stTprobeMeasuring";
         case State::stMeasure:  return "stMeasure";
         case State::stTransmit: return "stTransmit";
         case State::stWriteFile: return "stWriteFile";
@@ -426,6 +285,9 @@ private:
     void updateLightMeasurements();
     void resetMeasurements();
     void measureActivity();
+    void powerUpProbe();
+    void startProbeMeasurement();
+    void finishProbeMeasurement();
 
     // telemetry handling.
     void fillTxBuffer(TxBuffer_t &b, Measurement const & mData);
@@ -467,8 +329,11 @@ private:
 
     Adafruit_BME280                 m_BME280;
     McciCatena::Catena_Si1133       m_si1133;
+
+
+    // for the temperature probe
     OneWire                         m_oneWire;
-    DallasTemperature               m_probes;
+    cProbe                          m_probe;
 
     // second SPI class
     SPIClass                        *m_pSPI2;
@@ -519,9 +384,6 @@ private:
     std::uint32_t                   m_pirBaseTimeMs;
     std::uint32_t                   m_pirLastTimeMs;
     std::uint32_t                   m_pirSampleSec;
-
-    // Pellet Feeder
-    cPelletFeeder                   m_PelletFeeder;
 
     // activity time control
     McciCatena::cTimer              m_ActivityTimer;

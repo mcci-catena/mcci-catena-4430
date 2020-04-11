@@ -15,6 +15,8 @@ Author:
 
 #include "Catena4430_cMeasurementLoop.h"
 
+#include "Catena4430_SensorWithProbe.h"
+
 #include <Catena4430.h>
 #include <arduino_lmic.h>
 
@@ -43,9 +45,10 @@ void cMeasurementLoop::begin()
     // start and initialize the PIR sensor
     this->m_pir.begin(gCatena);
 
-    // start and initialize pellet feeder monitoring.
-    this->m_PelletFeeder.begin(gCatena);
+    // start and initialize the temperature probe
+    this->m_probe.begin(this->m_oneWire);
 
+    // set up the on-board i2c devices.
     Wire.begin();
     if (this->m_BME280.begin(BME280_ADDRESS, Adafruit_BME280::OPERATING_MODE::Sleep))
         {
@@ -165,7 +168,43 @@ cMeasurementLoop::fsmDispatch(
             this->setTimer(5 * 1000);
             }
         if (this->timedOut())
+            newState = State::stTprobePowerOn;
+        break;
+
+    // power on the probe
+    case State::stTprobePowerOn:
+        if (fEntry)
+            {
+            digitalWrite(kOnewirePullupVdd, 1);
+            gpio.setVout1(true);
+
+            this->m_probe.powerUp();
+            }
+
+        if (this->m_probe.pollPower())
+            newState = State::stTprobeMeasuring;
+        break;
+
+    // start probe measurement
+    case State::stTprobeMeasuring:
+        if (fEntry)
+            {
+            this->m_probe.startMeasurement();
+            }
+
+        if (this->m_probe.pollMeasurement())
+            {
+            // measurement is done; grab data, kill power.
+            if (this->m_probe.finishMeasurement(this->m_data.probe.Temperature))
+                this->m_data.flags |= Flags::Tprobe;
+
+            // power down the probe
+            digitalWrite(kOnewirePullupVdd, 0);
+            gpio.setVout1(false);
+
+            // next state
             newState = State::stMeasure;
+            }
         break;
 
     // fill in the measurement
@@ -174,6 +213,8 @@ cMeasurementLoop::fsmDispatch(
             {
             // start SI1133 measurement (one-time)
             this->m_si1133.start(true);
+
+            // take the other measurements
             this->updateSynchronousMeasurements();
             this->setTimer(100);
             }
@@ -291,19 +332,9 @@ void cMeasurementLoop::updateSynchronousMeasurements()
 
     // SI1133 is handled separately
 
+    // DS18B20 temperature probe is handled separately
+
     // update activity -- this is is already handled elsewhere
-
-    // grab data on pellets.
-    cPelletFeeder::PelletFeederData data;
-    this->m_PelletFeeder.readAndReset(data);
-    this->m_data.flags |= Flags::Pellets;
-
-    // fill in the measurement.
-    for (unsigned i = 0; i < kMaxPelletEntries; ++i)
-        {
-        this->m_data.pellets[i].Total = data.feeder[i].total;
-        this->m_data.pellets[i].Recent = data.feeder[i].current;
-        }
 
     // grab time of last activity update.
     gClock.get(this->m_data.DateTime);

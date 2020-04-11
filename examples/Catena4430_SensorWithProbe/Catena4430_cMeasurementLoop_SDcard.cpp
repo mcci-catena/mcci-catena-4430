@@ -260,7 +260,6 @@ cMeasurementLoop::writeSdCard(
 
             if ((mData.flags & Flags::Tprobe) != Flags(0))
                 dataFile.print(mData.probe.Temperature);
-                }
             dataFile.print(',');
 
             for (auto i = kMaxActivityEntries; i > 0; )

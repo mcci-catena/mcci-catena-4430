@@ -17,3 +17,7 @@ github.com	mcci-catena/Adafruit_Sensor.git
 
 # the following are needed for the 4430 function.
 github.com	mcci-catena/SD.git
+
+# the following are needed for the temperature sensor.
+github.com  mcci-catena/Arduino-Temperature-Control-Library
+github.com  mcci-catena/OneWire

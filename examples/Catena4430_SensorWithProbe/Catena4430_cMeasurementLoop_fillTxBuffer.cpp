@@ -106,14 +106,21 @@ cMeasurementLoop::fillTxBuffer(
         b.putLux(mData.light.White);
         }
 
-    // put pellets
-    if ((mData.flags & Flags::Pellets) != Flags(0))
+    // put Tprobe
+    if ((mData.flags & Flags::Tprobe) != Flags(0))
         {
-        for (unsigned i = 0; i < MeasurementFormat::kMaxPelletEntries; ++i)
-            {
-            b.put2(mData.pellets[i].Total & 0xFFFFu);
-            b.put(mData.pellets[i].Recent);
-            }
+        int32_t tInt128 (mData.probe.Temperature * 128.0f);
+        b.put2(tInt128);
+
+        // use 3 digits because we have 7 bits of fraction (128 parts),
+        // so 3 digits allows us to report exact answer. Use 'f'
+        // suffix so calculations are single-precision.
+        int32_t tInt (mData.probe.Temperature * 1000.0f + 0.5f);
+        gCatena.SafePrintf(
+            "Tprobe (C): %d.%03d\n",
+            tInt / 1000,
+            tInt % 1000
+            );
         }
 
     // put activity
