@@ -153,7 +153,7 @@ cMeasurementLoop::fsmDispatch(
             newState = State::stInactive;
             }
         else if (this->m_UplinkTimer.isready())
-            newState = State::stMeasure;
+            newState = State::stTprobePowerOn;
         else if (this->m_UplinkTimer.getRemaining() > 1500)
             this->sleep();
         break;
