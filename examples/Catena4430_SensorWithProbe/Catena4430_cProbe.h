@@ -20,6 +20,12 @@ Author:
 
 #include <DallasTemperature.h>
 
+// for debugging purposes
+#include <Catena.h>
+extern McciCatena::Catena gCatena;
+
+namespace McciCatena4430 {
+
 class cProbe
     {
 public:
@@ -66,7 +72,9 @@ public:
 
     bool pollPower()
         {
-        if (! this->m_powerIsOn && millis() - this->m_powerTime < kPowerOnMillis)
+        if (this->m_powerIsOn)
+            return true;
+        else if (millis() - this->m_powerTime < kPowerOnMillis)
             return false;
         else
             {
@@ -80,7 +88,7 @@ public:
         this->m_powerIsOn = this->m_powerRequested = false;
         }
 
-    bool startMeasurement()
+    bool startMeasurement(bool fDebug = true)
         {
         if (! this->pollPower())
             {
@@ -95,8 +103,22 @@ public:
             if (this->m_ds.getDeviceCount() != 0)
                 {
                 this->m_addressValid = this->m_ds.getAddress(this->m_probeAddress, 0);
-                if (this->m_addressValid && this->m_probeAddress[0] != DS18B20MODEL)
+                if (! this->m_addressValid)
+                    {
+                    if (fDebug)
+                        gCatena.SafePrintf("getAddress failed\n");
+                    }
+                else if (this->m_probeAddress[0] != DS18B20MODEL)
+                    {
+                    if (fDebug)
+                        gCatena.SafePrintf("Wrong probe type: 0x%02x\n", this->m_probeAddress[0]);
                     this->m_addressValid = false;
+                    }
+                }
+            else
+                {
+                if (fDebug)
+                    gCatena.SafePrintf("getDeviceCount failed\n");
                 }
             }
         // now, if we have a valid address for an 18B20, set things up
@@ -104,14 +126,22 @@ public:
             {
             // set asynch mode.
             this->m_ds.setWaitForConversion(false);
-            // always set resoltion to 12
+            // always set resolution to 12
             if (! this->m_ds.setResolution(this->m_probeAddress, 12, true))
+                {
                 // device not responding.
+                if (fDebug)
+                    gCatena.SafePrintf("setResolution failed\n");
                 this->m_addressValid = false;
+                }
             // start a conversion
             else if (! this->m_ds.requestTemperaturesByAddress(this->m_probeAddress))
+                {
                 // device not responding.
+                if (fDebug)
+                    gCatena.SafePrintf("requestTemperaturesByAddress failed\n");
                 this->m_addressValid = false;
+                }
             else
                 // record conversion start time.
                 this->m_startTime = millis();
@@ -159,5 +189,7 @@ public:
         return this->m_addressValid;
         }
     };
+
+} // namespace McciCatena4430
 
 #endif /* Catena4430_cProbe */

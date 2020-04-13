@@ -189,7 +189,10 @@ cMeasurementLoop::fsmDispatch(
     case State::stTprobeMeasuring:
         if (fEntry)
             {
-            this->m_probe.startMeasurement();
+            if (! this->m_probe.startMeasurement())
+                {
+                gCatena.SafePrintf("startMeasurement failed\n");
+                }
             }
 
         if (this->m_probe.pollMeasurement())
@@ -197,6 +200,10 @@ cMeasurementLoop::fsmDispatch(
             // measurement is done; grab data, kill power.
             if (this->m_probe.finishMeasurement(this->m_data.probe.Temperature))
                 this->m_data.flags |= Flags::Tprobe;
+            else
+                {
+                gCatena.SafePrintf("finishMeasurement failed \n");
+                }
 
             // power down the probe
             digitalWrite(kOnewirePullupVdd, 0);
