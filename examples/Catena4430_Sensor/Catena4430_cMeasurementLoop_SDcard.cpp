@@ -54,6 +54,12 @@ static void sdPrep()
 
 static void sdFinish()
     {
+    // gSD.end() calls card.forceIdle() which will
+    // (try to) put the card in the idle state.
+    if (! gSD.end())
+        {
+        gCatena.SafePrintf("gSD.end() timed out\n");
+        }
     sdPowerUp(false);
     }
 
@@ -80,7 +86,6 @@ cMeasurementLoop::initSdCard(
     )
     {
     bool fResult = this->checkSdCard();
-    gSD.end();
 
     sdFinish();
     return fResult;
@@ -287,7 +292,6 @@ cMeasurementLoop::writeSdCard(
             }
         }
     
-    gSD.end();
     sdFinish();
     return fResult;
     }
