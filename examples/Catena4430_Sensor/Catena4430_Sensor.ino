@@ -37,7 +37,7 @@ static_assert(
     "This sketch requires Catena-Arduino-Platform v0.17.0.40 or later"
     );
 
-constexpr std::uint32_t kAppVersion = makeVersion(0,3,3,0);
+constexpr std::uint32_t kAppVersion = makeVersion(0,3,3,2);
 
 /****************************************************************************\
 |
