@@ -38,21 +38,27 @@ SDClass gSD;
 \****************************************************************************/
 
 // turn on power to the SD card
-static void sdPowerUp(bool fOn)
+void cMeasurementLoop::sdPowerUp(bool fOn)
     {
     gpio.setVsdcard(fOn);
     }
 
-static void sdPrep()
+void cMeasurementLoop::sdPrep()
     {
     digitalWrite(cMeasurementLoop::kSdCardCSpin, 1);
     pinMode(cMeasurementLoop::kSdCardCSpin, OUTPUT);
+    if (! this->m_fSpi2Active)
+        {
+        this->m_pSPI2->begin();
+        this->m_fSpi2Active = true;
+        }
+
     digitalWrite(cMeasurementLoop::kSdCardCSpin, 1);
-    sdPowerUp(true);
+    this->sdPowerUp(true);
     delay(100);
     }
 
-static void sdFinish()
+void cMeasurementLoop::sdFinish()
     {
     // gSD.end() calls card.forceIdle() which will
     // (try to) put the card in the idle state.
@@ -60,7 +66,19 @@ static void sdFinish()
         {
         gCatena.SafePrintf("gSD.end() timed out\n");
         }
-    sdPowerUp(false);
+
+    // turn off CS to avoid locking Vsdcard on.
+    this->m_pSPI2->end();
+    this->m_fSpi2Active = false;
+    pinMode(Catena::PIN_SPI2_MOSI, OUTPUT);
+    pinMode(Catena::PIN_SPI2_MISO, OUTPUT);
+    pinMode(Catena::PIN_SPI2_SCK, OUTPUT);
+    digitalWrite(Catena::PIN_SPI2_MOSI, 0);
+    digitalWrite(Catena::PIN_SPI2_MISO, 0);
+    digitalWrite(Catena::PIN_SPI2_SCK, 0);
+    digitalWrite(cMeasurementLoop::kSdCardCSpin, 0);
+    delay(1);
+    this->sdPowerUp(false);
     }
 
 /*

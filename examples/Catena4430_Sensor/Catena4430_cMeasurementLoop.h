@@ -352,6 +352,9 @@ private:
     bool initSdCard();
     bool checkSdCard();
     bool writeSdCard(TxBuffer_t &b, Measurement const &mData);
+    void sdPowerUp(bool fOn);
+    void sdPrep();
+    void sdFinish();
 
     // pir handling
     void resetPirAccumulation(void);
@@ -414,6 +417,8 @@ private:
     bool                            m_txerr : 1;
     // set true when we've printed how we plan to sleep
     bool                            m_fPrintedSleeping : 1;
+    // set true when SPI2 is active
+    bool                            m_fSpi2Active: 1;
 
     // PIR sample control
     cPIRdigital                     m_pir;

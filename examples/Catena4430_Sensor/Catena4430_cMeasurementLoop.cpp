@@ -646,8 +646,11 @@ void cMeasurementLoop::deepSleepPrepare(void)
     Serial.end();
     Wire.end();
     SPI.end();
-    if (this->m_pSPI2)
+    if (this->m_pSPI2 && this->m_fSpi2Active)
+        {
         this->m_pSPI2->end();
+        this->m_fSpi2Active = false;
+        }
     }
 
 void cMeasurementLoop::deepSleepRecovery(void)
@@ -655,8 +658,8 @@ void cMeasurementLoop::deepSleepRecovery(void)
     Serial.begin();
     Wire.begin();
     SPI.begin();
-    if (this->m_pSPI2)
-        this->m_pSPI2->begin();
+    // if (this->m_pSPI2)
+    //    this->m_pSPI2->begin();
     }
 
 /****************************************************************************\
