@@ -38,21 +38,27 @@ SDClass gSD;
 \****************************************************************************/
 
 // turn on power to the SD card
-static void sdPowerUp(bool fOn)
+void cMeasurementLoop::sdPowerUp(bool fOn)
     {
     gpio.setVsdcard(fOn);
     }
 
-static void sdPrep()
+void cMeasurementLoop::sdPrep()
     {
     digitalWrite(cMeasurementLoop::kSdCardCSpin, 1);
     pinMode(cMeasurementLoop::kSdCardCSpin, OUTPUT);
+    if (! this->m_fSpi2Active)
+        {
+        this->m_pSPI2->begin();
+        this->m_fSpi2Active = true;
+        }
+
     digitalWrite(cMeasurementLoop::kSdCardCSpin, 1);
-    sdPowerUp(true);
+    this->sdPowerUp(true);
     delay(100);
     }
 
-static void sdFinish()
+void cMeasurementLoop::sdFinish()
     {
     // gSD.end() calls card.forceIdle() which will
     // (try to) put the card in the idle state.
@@ -60,7 +66,19 @@ static void sdFinish()
         {
         gCatena.SafePrintf("gSD.end() timed out\n");
         }
-    sdPowerUp(false);
+
+    // turn off CS to avoid locking Vsdcard on.
+    this->m_pSPI2->end();
+    this->m_fSpi2Active = false;
+    pinMode(Catena::PIN_SPI2_MOSI, OUTPUT);
+    pinMode(Catena::PIN_SPI2_MISO, OUTPUT);
+    pinMode(Catena::PIN_SPI2_SCK, OUTPUT);
+    digitalWrite(Catena::PIN_SPI2_MOSI, 0);
+    digitalWrite(Catena::PIN_SPI2_MISO, 0);
+    digitalWrite(Catena::PIN_SPI2_SCK, 0);
+    digitalWrite(cMeasurementLoop::kSdCardCSpin, 0);
+    delay(1);
+    this->sdPowerUp(false);
     }
 
 /*
@@ -107,7 +125,7 @@ static const char kHeader[] =
 bool
 cMeasurementLoop::writeSdCard(
     cMeasurementLoop::TxBuffer_t &b,
-    cMeasurementLoop::Measurement const & mData    
+    cMeasurementLoop::Measurement const & mData
     )
     {
     cDate d;
@@ -167,10 +185,10 @@ cMeasurementLoop::writeSdCard(
                         }
                     }
                 }
-            
+
             char buf[32];
             McciAdkLib_Snprintf(
-                buf, sizeof(buf), 0, 
+                buf, sizeof(buf), 0,
                 "%04u-%02u-%02uT%02u:%02u:%02uZ,",
                 d.year(), d.month(), d.day(),
                 d.hour(), d.minute(), d.second()
@@ -189,13 +207,13 @@ cMeasurementLoop::writeSdCard(
                     pFram->getField(cFramStorage::StandardKeys::kDevEUI, devEUI))
                     {
                     dataFile.print('"');
-                    
+
                     /* write the devEUI */
                     for (auto i = 0; i < sizeof(devEUI.b); ++i)
                         {
                         // the devEUI is stored in little-endian order.
                         McciAdkLib_Snprintf(
-                            buf, sizeof(buf), 0, 
+                            buf, sizeof(buf), 0,
                             "%02x", devEUI.b[sizeof(devEUI.b) - i - 1]
                             );
                         dataFile.print(buf);
@@ -229,7 +247,7 @@ cMeasurementLoop::writeSdCard(
 
             if ((mData.flags & Flags::Vcc) != Flags(0))
                 dataFile.print(mData.Vsystem);
-            
+
             dataFile.print(',');
 
             if ((mData.flags & Flags::Vbus) != Flags(0))
@@ -291,7 +309,7 @@ cMeasurementLoop::writeSdCard(
             gCatena.SafePrintf("can't open: %s\n", fName);
             }
         }
-    
+
     sdFinish();
     return fResult;
     }

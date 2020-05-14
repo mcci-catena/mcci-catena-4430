@@ -54,7 +54,7 @@ namespace McciCatena4430 {
 
 class cMeasurementBase
     {
-    
+
     };
 
 class cMeasurementFormat21
@@ -134,7 +134,7 @@ public:
         //----------------
         // the subtypes:
         //----------------
-        
+
         // environmental measurements
         struct Env
             {
@@ -167,7 +167,7 @@ public:
             {
             float                   Avg;
             };
-            
+
         //---------------------------
         // the actual members as POD
         //---------------------------
@@ -296,7 +296,7 @@ public:
     virtual void poll() override;
     void setBme280(bool fEnable)
         {
-        this->m_fBme280 = fEnable; 
+        this->m_fBme280 = fEnable;
         }
     void setVbus(float Vbus)
         {
@@ -352,13 +352,16 @@ private:
     bool initSdCard();
     bool checkSdCard();
     bool writeSdCard(TxBuffer_t &b, Measurement const &mData);
+    void sdPowerUp(bool fOn);
+    void sdPrep();
+    void sdFinish();
 
     // pir handling
     void resetPirAccumulation(void);
     void accumulatePirData(void);
 
     // timeout handling
- 
+
     // set the timer
     void setTimer(std::uint32_t ms);
     // clear the timer
@@ -414,6 +417,8 @@ private:
     bool                            m_txerr : 1;
     // set true when we've printed how we plan to sleep
     bool                            m_fPrintedSleeping : 1;
+    // set true when SPI2 is active
+    bool                            m_fSpi2Active: 1;
 
     // PIR sample control
     cPIRdigital                     m_pir;

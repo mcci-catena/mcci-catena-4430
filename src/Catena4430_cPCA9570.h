@@ -80,7 +80,7 @@ public:
         { return this->m_value & kActiveBits; }
 
     // read the output register of the PCA9570. Takes into
-    // account inversion, so result is conmensurate with 
+    // account inversion, so result is conmensurate with
     // cPCA9570::get().
     bool read(std::uint8_t &value) const;
 

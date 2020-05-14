@@ -44,12 +44,12 @@ class cPelletFeeder : public McciCatena::cPollableObject
     //*******************************************
 public:
     // constructor
-    cPelletFeeder() 
+    cPelletFeeder()
         : m_vddpin(kVddEnable)
         , m_data({ {.pin = kPelletFeeder0}, {.pin = kPelletFeeder1 } })
         { }
 
-    // neither copyable nor movable 
+    // neither copyable nor movable
     cPelletFeeder(const cPelletFeeder&) = delete;
     cPelletFeeder& operator=(const cPelletFeeder&) = delete;
     cPelletFeeder(const cPelletFeeder&&) = delete;
@@ -65,7 +65,7 @@ private:
         // pin
         std::uint8_t    pin;
         // total since last call to reset
-        std::uint8_t    current; 
+        std::uint8_t    current;
         // last observation
         std::uint8_t    lastObservation;
         // spare for alignment
