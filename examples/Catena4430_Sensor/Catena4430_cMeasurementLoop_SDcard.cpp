@@ -125,7 +125,7 @@ static const char kHeader[] =
 bool
 cMeasurementLoop::writeSdCard(
     cMeasurementLoop::TxBuffer_t &b,
-    cMeasurementLoop::Measurement const & mData    
+    cMeasurementLoop::Measurement const & mData
     )
     {
     cDate d;
@@ -185,10 +185,10 @@ cMeasurementLoop::writeSdCard(
                         }
                     }
                 }
-            
+
             char buf[32];
             McciAdkLib_Snprintf(
-                buf, sizeof(buf), 0, 
+                buf, sizeof(buf), 0,
                 "%04u-%02u-%02uT%02u:%02u:%02uZ,",
                 d.year(), d.month(), d.day(),
                 d.hour(), d.minute(), d.second()
@@ -207,13 +207,13 @@ cMeasurementLoop::writeSdCard(
                     pFram->getField(cFramStorage::StandardKeys::kDevEUI, devEUI))
                     {
                     dataFile.print('"');
-                    
+
                     /* write the devEUI */
                     for (auto i = 0; i < sizeof(devEUI.b); ++i)
                         {
                         // the devEUI is stored in little-endian order.
                         McciAdkLib_Snprintf(
-                            buf, sizeof(buf), 0, 
+                            buf, sizeof(buf), 0,
                             "%02x", devEUI.b[sizeof(devEUI.b) - i - 1]
                             );
                         dataFile.print(buf);
@@ -247,7 +247,7 @@ cMeasurementLoop::writeSdCard(
 
             if ((mData.flags & Flags::Vcc) != Flags(0))
                 dataFile.print(mData.Vsystem);
-            
+
             dataFile.print(',');
 
             if ((mData.flags & Flags::Vbus) != Flags(0))
@@ -309,7 +309,7 @@ cMeasurementLoop::writeSdCard(
             gCatena.SafePrintf("can't open: %s\n", fName);
             }
         }
-    
+
     sdFinish();
     return fResult;
     }

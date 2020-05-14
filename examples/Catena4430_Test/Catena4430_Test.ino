@@ -155,7 +155,7 @@ void loop() {
             ledValue = gpio.kRedMask;
         else
             ledValue = gpio.kGreenMask;
-    
+
         gpio.setLeds(ledMask, ledValue);
         }
 

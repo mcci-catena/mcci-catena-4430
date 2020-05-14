@@ -46,7 +46,7 @@ void cPIRdigital::poll() /* override */
     // now compute the result
     float delta = v ? 1.0f : -1.0f;
 
-    float m = float(tNow - this->m_tLast) / this->getTimeConstant(); 
+    float m = float(tNow - this->m_tLast) / this->getTimeConstant();
 
     // The formaula for a classic unity-gain one-pole IIR filter is g*new + (1-g)*old,
     // and that's what this is, if g is 1-(the effective decay value).
@@ -55,7 +55,7 @@ void cPIRdigital::poll() /* override */
     this->m_value = this->m_value + m * (delta  - this->m_value);
 
     // we clamp the output to the range [-1, 1].
-    if (this->m_value > 1.0f) 
+    if (this->m_value > 1.0f)
         this->m_value = 1.0f;
     else if (this->m_value < -1.0f)
         this->m_value = -1.0f;

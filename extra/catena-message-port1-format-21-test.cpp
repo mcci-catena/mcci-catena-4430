@@ -291,7 +291,7 @@ void encodeMeasurement(Buffer &buf, Measurements &m)
         flags |= 1 << 3;
         buf.push_back(m.Boot.v);
         }
-    
+
     if (m.Env.fValid)
         {
         flags |= 1 << 4;
@@ -364,7 +364,7 @@ void logMeasurement(Measurements &m)
         {
         std::cout << pad.get() << "Boot " << unsigned(m.Boot.v);
         }
-    
+
     if (m.Env.fValid)
         {
         std::cout << pad.get() << "Env " << m.Env.v.t << " "
@@ -460,7 +460,7 @@ int main(int argc, char **argv)
             }
         else if (key == "Activity")
             {
-            std::cin >> m.Activity.v.Avg 
+            std::cin >> m.Activity.v.Avg
                      >> m.Activity.v.Min
                      >> m.Activity.v.Max;
             m.Activity.fValid = true;
@@ -483,7 +483,7 @@ int main(int argc, char **argv)
 
         fAny |= fUpdate;
         }
-    
+
     if (!std::cin.eof() && std::cin.fail())
         {
         std::string nextword;

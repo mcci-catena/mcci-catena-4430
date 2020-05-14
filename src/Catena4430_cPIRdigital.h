@@ -45,11 +45,11 @@ class cPIRdigital : public McciCatena::cPollableObject
     //*******************************************
 public:
     // constructor
-    cPIRdigital(int pin = kPirData) 
+    cPIRdigital(int pin = kPirData)
         : m_pin(pin)
         { }
 
-    // neither copyable nor movable 
+    // neither copyable nor movable
     cPIRdigital(const cPIRdigital&) = delete;
     cPIRdigital& operator=(const cPIRdigital&) = delete;
     cPIRdigital(const cPIRdigital&&) = delete;
