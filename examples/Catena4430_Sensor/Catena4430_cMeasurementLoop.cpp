@@ -20,6 +20,8 @@ Author:
 
 using namespace McciCatena4430;
 
+cMeasurementLoop gMeasurement;
+
 /****************************************************************************\
 |
 |   An object to represent the uplink activity
@@ -74,6 +76,63 @@ void cMeasurementLoop::begin()
         this->m_exit = false;
         this->m_fsm.init(*this, &cMeasurementLoop::fsmDispatch);
         }
+    
+    /* Peripheral clock enable */
+    // set LPTIM1 clock to LSE clock.
+    __HAL_RCC_LPTIM1_CONFIG(RCC_LPTIM1CLKSOURCE_LSE);
+    __HAL_RCC_LPTIM1_CLK_ENABLE();
+    
+    LPTIM1_Init();
+    HAL_NVIC_DisableIRQ(LPTIM1_IRQn);
+    
+    LPTIM1->IER = LPTIM_IER_CMPMIE;
+    LPTIM1->IER |= LPTIM_IER_ARRMIE;
+    HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
+    }
+
+static void LPTIM1_Init(void)
+    {
+    hlptim.Instance = LPTIM1;
+    hlptim.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
+    hlptim.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV1;
+    hlptim.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
+    hlptim.Init.OutputPolarity = LPTIM_OUTPUTPOLARITY_HIGH;
+    hlptim.Init.UpdateMode = LPTIM_UPDATE_IMMEDIATE;
+    hlptim.Init.CounterSource = LPTIM_COUNTERSOURCE_INTERNAL;
+    
+    if (HAL_LPTIM_Init(&hlptim) != HAL_OK)
+        {
+        Error_Handler_lptim();
+        }
+    }
+
+void Error_Handler_lptim()
+    {
+    gCatena.SafePrintf("LPTIM Init failed!!\n");
+    }
+
+uint32_t HAL_AddTick(
+   uint32_t delta
+    )
+    {
+    extern __IO uint32_t uwTick;
+    // copy old interrupt-enable state to flags.
+    uint32_t const flags = __get_PRIMASK();
+  
+    // disable interrupts
+    __set_PRIMASK(1);
+  
+    // observe uwTick, and advance it.
+    uint32_t const tickCount = uwTick + delta;
+  
+    // save uwTick
+    uwTick = tickCount;
+  
+    // restore interrupts (does nothing if ints were disabled on entry)
+    __set_PRIMASK(flags);
+  
+    // return the new value of uwTick.
+    return tickCount;
     }
 
 void cMeasurementLoop::end()
@@ -480,6 +539,28 @@ void cMeasurementLoop::poll()
 
     if (fEvent)
         this->m_fsm.eval();
+
+    if (!(os_queryTimeCriticalJobs(ms2osticks(200))))
+        {
+        gLed.Set(McciCatena::LedPattern::Off);
+        this->deepSleepPrepare();
+
+        /*  
+         *   Autoreload value and Timeout value is passed as 200 ms.
+         *  Formula for nCount(period and timeout): Tsec = nCount/frequency,
+         *  where, Tsec = 200ms, frequency = 32768Hz (LSE clock)
+         *  nCount = 0.2 * 32768 = 6554
+         */
+        HAL_LPTIM_TimeOut_Start(&hlptim, 6554, 6554);
+        HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
+        
+        /* device enter DeepSleep */
+        HAL_SuspendTick();
+        HAL_PWR_EnterSTOPMode(
+            PWR_LOWPOWERREGULATOR_ON,
+            PWR_SLEEPENTRY_WFI
+            );
+        }
     }
 
 /****************************************************************************\
@@ -662,6 +743,24 @@ void cMeasurementLoop::deepSleepRecovery(void)
     //    this->m_pSPI2->begin();
     }
 
+extern "C" {       
+void LPTIM1_IRQHandler(void)
+    {
+    HAL_LPTIM_IRQHandler(&hlptim);
+    }
+}
+
+void HAL_LPTIM_CompareMatchCallback(
+    LPTIM_HandleTypeDef * hlptim
+    )
+    {
+    HAL_IncTick();
+    HAL_ResumeTick();
+    HAL_AddTick(200);
+    gMeasurement.deepSleepRecovery();
+    __HAL_LPTIM_DISABLE(hlptim);
+    }
+
 /****************************************************************************\
 |
 |  Time-out asynchronous measurements.
@@ -689,4 +788,3 @@ bool cMeasurementLoop::timedOut()
     this->m_fTimerEvent = false;
     return result;
     }
-

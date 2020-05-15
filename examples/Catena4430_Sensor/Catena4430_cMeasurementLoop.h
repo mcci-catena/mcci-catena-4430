@@ -44,6 +44,13 @@ extern McciCatena::Catena gCatena;
 extern McciCatena::Catena::LoRaWAN gLoRaWAN;
 extern McciCatena::StatusLed gLed;
 
+static LPTIM_HandleTypeDef hlptim;
+
+static void LPTIM1_Init(void);
+void Error_Handler_lptim(void);
+
+uint32_t HAL_AddTick(uint32_t delta);
+
 namespace McciCatena4430 {
 
 /****************************************************************************\
@@ -212,6 +219,9 @@ public:
     using Flags = MeasurementFormat::Flags;
     static constexpr std::uint8_t kMessageFormat = MeasurementFormat::kMessageFormat;
     static constexpr std::uint8_t kSdCardCSpin = D5;
+    
+    void deepSleepPrepare();
+    void deepSleepRecovery();
 
     enum DebugFlags : std::uint32_t
         {
@@ -325,8 +335,8 @@ private:
     bool checkDeepSleep();
     void doSleepAlert(bool fDeepSleep);
     void doDeepSleep();
-    void deepSleepPrepare();
-    void deepSleepRecovery();
+    // void deepSleepPrepare();
+    // void deepSleepRecovery();
 
     // read data
     void updateSynchronousMeasurements();
