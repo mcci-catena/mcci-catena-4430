@@ -20,7 +20,10 @@ Author:
 
 using namespace McciCatena4430;
 
-cMeasurementLoop gMeasurement;
+void lptim_sleep();
+uint32_t HAL_AddTick(uint32_t delta);
+
+uint32_t timeOut = 200;
 
 /****************************************************************************\
 |
@@ -76,63 +79,6 @@ void cMeasurementLoop::begin()
         this->m_exit = false;
         this->m_fsm.init(*this, &cMeasurementLoop::fsmDispatch);
         }
-    
-    /* Peripheral clock enable */
-    // set LPTIM1 clock to LSE clock.
-    __HAL_RCC_LPTIM1_CONFIG(RCC_LPTIM1CLKSOURCE_LSE);
-    __HAL_RCC_LPTIM1_CLK_ENABLE();
-    
-    LPTIM1_Init();
-    HAL_NVIC_DisableIRQ(LPTIM1_IRQn);
-    
-    LPTIM1->IER = LPTIM_IER_CMPMIE;
-    LPTIM1->IER |= LPTIM_IER_ARRMIE;
-    HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
-    }
-
-static void LPTIM1_Init(void)
-    {
-    hlptim.Instance = LPTIM1;
-    hlptim.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
-    hlptim.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV1;
-    hlptim.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
-    hlptim.Init.OutputPolarity = LPTIM_OUTPUTPOLARITY_HIGH;
-    hlptim.Init.UpdateMode = LPTIM_UPDATE_IMMEDIATE;
-    hlptim.Init.CounterSource = LPTIM_COUNTERSOURCE_INTERNAL;
-    
-    if (HAL_LPTIM_Init(&hlptim) != HAL_OK)
-        {
-        Error_Handler_lptim();
-        }
-    }
-
-void Error_Handler_lptim()
-    {
-    gCatena.SafePrintf("LPTIM Init failed!!\n");
-    }
-
-uint32_t HAL_AddTick(
-   uint32_t delta
-    )
-    {
-    extern __IO uint32_t uwTick;
-    // copy old interrupt-enable state to flags.
-    uint32_t const flags = __get_PRIMASK();
-  
-    // disable interrupts
-    __set_PRIMASK(1);
-  
-    // observe uwTick, and advance it.
-    uint32_t const tickCount = uwTick + delta;
-  
-    // save uwTick
-    uwTick = tickCount;
-  
-    // restore interrupts (does nothing if ints were disabled on entry)
-    __set_PRIMASK(flags);
-  
-    // return the new value of uwTick.
-    return tickCount;
     }
 
 void cMeasurementLoop::end()
@@ -540,28 +486,113 @@ void cMeasurementLoop::poll()
     if (fEvent)
         this->m_fsm.eval();
 
-    if (!(os_queryTimeCriticalJobs(ms2osticks(200))))
-        {
-        gLed.Set(McciCatena::LedPattern::Off);
-        this->deepSleepPrepare();
+    if (!(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
+        lptim_sleep();
+    }
 
-        /*  
-         *   Autoreload value and Timeout value is passed as 200 ms.
-         *  Formula for nCount(period and timeout): Tsec = nCount/frequency,
-         *  where, Tsec = 200ms, frequency = 32768Hz (LSE clock)
-         *  nCount = 0.2 * 32768 = 6554
-         */
-        HAL_LPTIM_TimeOut_Start(&hlptim, 6554, 6554);
-        HAL_NVIC_EnableIRQ(LPTIM1_IRQn);
-        
-        /* device enter DeepSleep */
-        HAL_SuspendTick();
-        HAL_PWR_EnterSTOPMode(
-            PWR_LOWPOWERREGULATOR_ON,
-            PWR_SLEEPENTRY_WFI
-            );
+static void setup_lptim(uint32_t msec)
+    {
+    // enable clock to LPTIM1
+    __HAL_RCC_LPTIM1_CLK_ENABLE();
+    __HAL_RCC_LPTIM1_CLK_SLEEP_ENABLE();
+    auto const pLptim = LPTIM1;
+
+    // set LPTIM1 clock to LSE clock.
+    __HAL_RCC_LPTIM1_CONFIG(RCC_LPTIM1CLKSOURCE_LSE);
+
+    // disable everything so we can tweak the CFGR
+    pLptim->CR = 0;
+
+    // upcount from selected internal clock (which is LSE)
+    auto rCfg = pLptim->CFGR & ~0x01FEEEDF;
+    rCfg |=  0;
+    pLptim->CFGR = rCfg;
+
+    // enable the counter but don't start it
+    pLptim->CR = LPTIM_CR_ENABLE;
+    delayMicroseconds(100);
+
+    // Clear ICR and ISR registers
+    pLptim->ICR |= 0x3F;
+    pLptim->ISR &= 0x00;
+
+    // set ARR to max value so we can count from 0 to 0xFFFF.
+    // must be done after enabling.
+    uint32_t timeoutCount;
+    timeoutCount = ((32768 * msec) / 1000);
+    pLptim->ARR = timeoutCount;
+
+    // Autoreload match interrupt
+    pLptim->IER |= LPTIM_IER_ARRMIE;
+
+    NVIC_SetPriority(LPTIM1_IRQn, 1);
+    NVIC_DisableIRQ(LPTIM1_IRQn);
+
+    // start in continuous mode.
+    pLptim->CR = LPTIM_CR_ENABLE | LPTIM_CR_CNTSTRT;
+
+    NVIC_EnableIRQ(LPTIM1_IRQn);
+    }
+
+void lptim_sleep()
+    {
+    setup_lptim(timeOut);
+    HAL_SuspendTick();
+    HAL_PWR_EnterSTOPMode(
+          PWR_LOWPOWERREGULATOR_ON,
+          PWR_STOPENTRY_WFE
+          );
+    HAL_IncTick();
+    HAL_ResumeTick();
+    HAL_AddTick(timeOut);
+    }
+
+uint32_t HAL_AddTick(
+   uint32_t delta
+    )
+    {
+    extern __IO uint32_t uwTick;
+    // copy old interrupt-enable state to flags.
+    uint32_t const flags = __get_PRIMASK();
+
+    // disable interrupts
+    __set_PRIMASK(1);
+
+    // observe uwTick, and advance it.
+    uint32_t const tickCount = uwTick + delta;
+
+    // save uwTick
+    uwTick = tickCount;
+
+    // restore interrupts (does nothing if ints were disabled on entry)
+    __set_PRIMASK(flags);
+
+    // return the new value of uwTick.
+    return tickCount;
+    }
+
+static uint16_t lptimcount_read()
+    {
+    auto const pLptim = LPTIM1;
+    uint32_t v1, v2;
+
+    for (v1 = pLptim->CNT & 0xFFFF; (v2 = pLptim->CNT & 0xFFFF) != v1; v1 = v2);
+
+    return (uint16_t) v1;
+    }
+
+extern "C" {
+void LPTIM1_IRQHandler(void)
+    {
+    NVIC_ClearPendingIRQ(LPTIM1_IRQn);
+    if(LPTIM1->ISR & LPTIM_ISR_ARRM) //If there was a compare match
+        {
+        LPTIM1->ICR |= LPTIM_ICR_ARRMCF;  //If the interrupt was enabled
+        LPTIM1->ICR |= LPTIM_ICR_CMPOKCF;
+        LPTIM1->CR = 0;
         }
     }
+}
 
 /****************************************************************************\
 |
@@ -741,24 +772,6 @@ void cMeasurementLoop::deepSleepRecovery(void)
     SPI.begin();
     // if (this->m_pSPI2)
     //    this->m_pSPI2->begin();
-    }
-
-extern "C" {       
-void LPTIM1_IRQHandler(void)
-    {
-    HAL_LPTIM_IRQHandler(&hlptim);
-    }
-}
-
-void HAL_LPTIM_CompareMatchCallback(
-    LPTIM_HandleTypeDef * hlptim
-    )
-    {
-    HAL_IncTick();
-    HAL_ResumeTick();
-    HAL_AddTick(200);
-    gMeasurement.deepSleepRecovery();
-    __HAL_LPTIM_DISABLE(hlptim);
     }
 
 /****************************************************************************\
