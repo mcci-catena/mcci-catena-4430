@@ -17,10 +17,14 @@ Author:
 
 #include <Catena4430.h>
 #include <arduino_lmic.h>
+#include <Catena4430_Sensor.h>
 
 using namespace McciCatena4430;
 
-void lptim_sleep();
+extern c4430Gpios gpio;
+extern cMeasurementLoop gMeasurementLoop;
+
+void lptimSleep(uint32_t timeOut);
 uint32_t HAL_AddTick(uint32_t delta);
 
 uint32_t timeOut = 200;
@@ -487,7 +491,7 @@ void cMeasurementLoop::poll()
         this->m_fsm.eval();
 
     if (!(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
-        lptim_sleep();
+        lptimSleep(timeOut);
     }
 
 static void setup_lptim(uint32_t msec)
@@ -495,6 +499,7 @@ static void setup_lptim(uint32_t msec)
     // enable clock to LPTIM1
     __HAL_RCC_LPTIM1_CLK_ENABLE();
     __HAL_RCC_LPTIM1_CLK_SLEEP_ENABLE();
+
     auto const pLptim = LPTIM1;
 
     // set LPTIM1 clock to LSE clock.
@@ -516,7 +521,8 @@ static void setup_lptim(uint32_t msec)
     pLptim->ICR |= 0x3F;
     pLptim->ISR &= 0x00;
 
-    // set ARR to max value so we can count from 0 to 0xFFFF.
+    // Auto-Reload Register is a 16-bit register
+    // set ARR to value between 0 to 0xFFFF ( < 1999 ms )
     // must be done after enabling.
     uint32_t timeoutCount;
     timeoutCount = ((32768 * msec) / 1000);
@@ -531,20 +537,30 @@ static void setup_lptim(uint32_t msec)
     // start in continuous mode.
     pLptim->CR = LPTIM_CR_ENABLE | LPTIM_CR_CNTSTRT;
 
+    // enable LPTIM interrupt routine
     NVIC_EnableIRQ(LPTIM1_IRQn);
     }
 
-void lptim_sleep()
+void lptimSleep(uint32_t timeOut)
     {
-    setup_lptim(timeOut);
+    uint32_t sleepTimeMS;
+    sleepTimeMS = timeOut;
+
+    setup_lptim(sleepTimeMS);
+
+    gMeasurementLoop.deepSleepPrepare();
+
     HAL_SuspendTick();
     HAL_PWR_EnterSTOPMode(
           PWR_LOWPOWERREGULATOR_ON,
-          PWR_STOPENTRY_WFE
+          PWR_STOPENTRY_WFI
           );
+
     HAL_IncTick();
     HAL_ResumeTick();
-    HAL_AddTick(timeOut);
+    HAL_AddTick(sleepTimeMS);
+
+    gMeasurementLoop.deepSleepRecovery();
     }
 
 uint32_t HAL_AddTick(
@@ -571,23 +587,14 @@ uint32_t HAL_AddTick(
     return tickCount;
     }
 
-static uint16_t lptimcount_read()
-    {
-    auto const pLptim = LPTIM1;
-    uint32_t v1, v2;
-
-    for (v1 = pLptim->CNT & 0xFFFF; (v2 = pLptim->CNT & 0xFFFF) != v1; v1 = v2);
-
-    return (uint16_t) v1;
-    }
-
 extern "C" {
 void LPTIM1_IRQHandler(void)
     {
     NVIC_ClearPendingIRQ(LPTIM1_IRQn);
     if(LPTIM1->ISR & LPTIM_ISR_ARRM) //If there was a compare match
         {
-        LPTIM1->ICR |= LPTIM_ICR_ARRMCF;  //If the interrupt was enabled
+        /* If the interrupt was enabled */
+        LPTIM1->ICR |= LPTIM_ICR_ARRMCF;
         LPTIM1->ICR |= LPTIM_ICR_CMPOKCF;
         LPTIM1->CR = 0;
         }
@@ -755,6 +762,12 @@ void cMeasurementLoop::doDeepSleep()
 
 void cMeasurementLoop::deepSleepPrepare(void)
     {
+    /* turn off gpios used for 4430 */
+    gpio.setDisplay(false);
+    gpio.setRed(false);
+    gpio.setBlue(false);
+    gpio.setGreen(false);
+
     Serial.end();
     Wire.end();
     SPI.end();
