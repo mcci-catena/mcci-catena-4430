@@ -70,6 +70,15 @@ Catena_Mx25v8035f gFlash;
 
 unsigned ledCount;
 
+// required time check for provisioning
+uint32_t provisionStartTime;
+uint32_t delay_ms;
+bool fProvision;
+bool fInitial;
+
+/* flag to check application mode */
+bool fMode;
+
 /****************************************************************************\
 |
 |   User commands
@@ -80,6 +89,8 @@ unsigned ledCount;
 static const cCommandStream::cEntry sMyExtraCommmands[] =
         {
         { "date", cmdDate },
+        { "mode", cmdMode },
+        { "provision", cmdProvision },
         // { "debugmask", cmdDebugMask },
         // other commands go here....
         };
@@ -110,6 +121,7 @@ void setup()
     setup_gpio();
     setup_rtc();
     setup_radio();
+    setup_mode();
     setup_commands();
     setup_start();
     }
@@ -222,6 +234,16 @@ void setup_radio()
     gCatena.registerObject(&gLoRaWAN);
     LMIC_setClockError(5 * MAX_CLOCK_ERROR / 100);
     }
+ 
+void setup_mode()
+    {
+    fMode = !(fMode);
+    
+    if (fMode)
+        gCatena.SafePrintf("Application configured in LPTIM Mode\n");
+    else
+        gCatena.SafePrintf("Application configured in Normal Mode\n");
+    }
 
 void setup_measurement()
     {
@@ -241,6 +263,23 @@ void setup_commands()
         */
         nullptr
         );
+    
+    gCatena.SafePrintf("To switch between LPTIM and Normal mode, use command 'mode'\n");
+    /* wait time for command from user */
+    delay(3000);
+    gCatena.SafePrintf("Timeout to enter command 'mode', RESET device to switch mode\n");
+
+    /* set flag to check for Provisioning in LPTIM mode */
+    fInitial = true;
+    }
+
+void start_provisioning(uint32_t delay_s)
+    {
+    delay_ms = delay_s * 1000;
+    provisionStartTime = millis();
+
+    /* set flag to enable provisioning */
+    fProvision = true;
     }
 
 void setup_start()
@@ -257,6 +296,29 @@ void setup_start()
 void loop()
     {
     gCatena.poll();
+
+    if (fMode && fInitial)
+        {
+        gCatena.SafePrintf("To start provision, use command 'provision' uses 60 second timeout\n");
+        gCatena.SafePrintf("For desired timeout to provision, use command 'provision <secs>'\n");
+        /* wait for 5seconds to receive command from user */
+        delay(10000);
+        gCatena.SafePrintf("Timeout to start provision, RESET the device to provision\n");
+        }
+    
+    if (fProvision)
+        {
+        if ((millis() - provisionStartTime) < delay_ms)
+            fProvision = true;        
+        else
+            {
+            /* clear flag to end provision time */
+            fProvision = false;
+            gCatena.SafePrintf("Requested time for provisioning has been end, RESET to Provision\n");
+            }
+        }
+        
+    fInitial = false;    
 
     // copy current PIR state to the blue LED.
     gpio.setBlue(digitalRead(A0));
