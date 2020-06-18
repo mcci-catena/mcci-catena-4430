@@ -42,5 +42,7 @@ extern  McciCatena4430::cMeasurementLoop        gMeasurementLoop;
 //   The flash
 extern  McciCatena::Catena_Mx25v8035f           gFlash;
 
+void setup_mode(void);
+void start_provisioning(uint32_t delay_s);
 
 #endif // !defined(_Catena4430_Sensor_h_)
