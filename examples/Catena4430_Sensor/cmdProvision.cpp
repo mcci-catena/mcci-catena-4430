@@ -100,7 +100,7 @@ cCommandStream::CommandStatus cmdProvision(
             }
         }
 
-    pThis->printf("Application paused for %u seconds to provision\n", howLong);
+    pThis->printf("LPTIM sleep disabled for %u seconds to provision\n", howLong);
     delay(100);
     start_provisioning(howLong);
 
