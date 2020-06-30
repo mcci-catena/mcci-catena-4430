@@ -303,7 +303,9 @@ public:
         }
     void setVbus(float Vbus)
         {
-        this->m_fUsbPower = (Vbus > 3.0f);
+        // set threshold value as 4.0V as there is reverse voltage
+        // in vbus(~3.5V) while powered from battery in 4610. 
+        this->m_fUsbPower = (Vbus > 4.0f) ? true : false;
         }
 
     // request that the measurement loop be active/inactive
