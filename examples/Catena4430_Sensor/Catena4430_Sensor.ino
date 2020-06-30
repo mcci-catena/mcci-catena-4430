@@ -261,21 +261,9 @@ void loop()
     // copy current PIR state to the blue LED.
     gpio.setBlue(digitalRead(A0));
 
-    // if it's time to update the LEDs, advance to the next step.
-    if (ledTimer.isready())
-        {
-        const std::uint8_t ledMask = (gpio.kRedMask | gpio.kGreenMask);
-        std::uint8_t ledValue;
+    // copy current state of Pin A1 to the Green LED.
+    gpio.setGreen(digitalRead(A1));
 
-        unsigned iGpio = 2 - ledCount;
-
-        ledCount = (ledCount + 1) % 2;
-
-        if (ledCount == 0)
-            ledValue = gpio.kRedMask;
-        else
-            ledValue = gpio.kGreenMask;
-
-        gpio.setLeds(ledMask, ledValue);
-        }
+    // copy current state of Pin A2 to the Red LED.
+    gpio.setRed(digitalRead(A2));    
     }
