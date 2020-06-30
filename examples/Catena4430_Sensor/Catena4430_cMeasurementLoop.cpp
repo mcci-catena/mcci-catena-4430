@@ -490,7 +490,10 @@ void cMeasurementLoop::poll()
     if (fEvent)
         this->m_fsm.eval();
 
-    if (!(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
+    this->m_data.Vbus = gCatena.ReadVbus();
+    setVbus(this->m_data.Vbus);
+
+    if (!(this->m_fUsbPower) && !(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
         lptimSleep(timeOut);
     }
 
