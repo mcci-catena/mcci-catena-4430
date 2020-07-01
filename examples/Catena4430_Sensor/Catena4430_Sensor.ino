@@ -69,6 +69,10 @@ cMeasurementLoop gMeasurementLoop;
 Catena_Mx25v8035f gFlash;
 
 unsigned ledCount;
+bool fAnalogPin1;
+bool fAnalogPin2;
+bool fCheckPinA1;
+bool fCheckPinA2;
 
 /****************************************************************************\
 |
@@ -257,13 +261,43 @@ void setup_start()
 void loop()
     {
     gCatena.poll();
-
+    
     // copy current PIR state to the blue LED.
     gpio.setBlue(digitalRead(A0));
 
-    // copy current state of Pin A1 to the Green LED.
-    gpio.setGreen(digitalRead(A1));
+    if (!fCheckPinA1)
+        {
+        // check the connection pin A1
+        if (digitalRead(A1) == 0)
+            {
+            fAnalogPin1 = true;
+            fCheckPinA1 = true;
+            }
+        }
 
-    // copy current state of Pin A2 to the Red LED.
-    gpio.setRed(digitalRead(A2));    
+    if (fAnalogPin1)
+        {
+        // copy current state of Pin A1 to the Green LED.
+        gpio.setGreen(digitalRead(A1));
+        }
+    else
+        gpio.setGreen(false);
+
+    if (!fCheckPinA2)
+        {
+        // check the connection pin A2
+        if (digitalRead(A2) == 0)
+            {
+            fAnalogPin2 = true;
+            fCheckPinA2 = true;
+            }
+        }
+
+    if (fAnalogPin2)
+        {
+        // copy current state of Pin A2 to the Green LED.
+        gpio.setRed(digitalRead(A2));
+        }
+    else
+        gpio.setRed(false);
     }
