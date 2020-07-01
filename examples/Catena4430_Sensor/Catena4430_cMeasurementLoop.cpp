@@ -24,6 +24,8 @@ using namespace McciCatena4430;
 extern c4430Gpios gpio;
 extern cMeasurementLoop gMeasurementLoop;
 
+static constexpr uint8_t kVddPin = D11;
+
 void lptimSleep(uint32_t timeOut);
 uint32_t HAL_AddTick(uint32_t delta);
 
@@ -765,11 +767,7 @@ void cMeasurementLoop::doDeepSleep()
 
 void cMeasurementLoop::deepSleepPrepare(void)
     {
-    /* turn off gpios used for 4430 */
-    gpio.setDisplay(false);
-    gpio.setRed(false);
-    gpio.setBlue(false);
-    gpio.setGreen(false);
+    pinMode(kVddPin, INPUT);
 
     Serial.end();
     Wire.end();
@@ -783,6 +781,9 @@ void cMeasurementLoop::deepSleepPrepare(void)
 
 void cMeasurementLoop::deepSleepRecovery(void)
     {
+    pinMode(kVddPin, OUTPUT);
+    digitalWrite(kVddPin, HIGH);
+    
     Serial.begin();
     Wire.begin();
     SPI.begin();
