@@ -186,7 +186,7 @@ cMeasurementLoop::fsmDispatch(
             // start SI1133 measurement (one-time)
             this->m_si1133.start(true);
             this->updateSynchronousMeasurements();
-            this->setTimer(100);
+            this->setTimer(1000);
             }
 
         if (this->m_si1133.isOneTimeReady())
