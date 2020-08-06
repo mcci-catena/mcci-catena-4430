@@ -69,6 +69,7 @@ cMeasurementLoop gMeasurementLoop;
 Catena_Mx25v8035f gFlash;
 
 unsigned ledCount;
+bool fDisableLED;
 bool fAnalogPin1;
 bool fAnalogPin2;
 bool fCheckPinA1;
@@ -129,6 +130,12 @@ void setup_platform()
             while (!Serial)
                     /* wait for USB attach */
                     yield();
+            }
+    
+    if ((gCatena.GetOperatingFlags() &
+            static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
+            {
+            fDisableLED = true;
             }
     }
 
@@ -264,40 +271,55 @@ void loop()
     
     // copy current PIR state to the blue LED.
     gpio.setBlue(digitalRead(A0));
-
-    if (!fCheckPinA1)
+    
+    if (fDisableLED)
         {
-        // check the connection pin A1
-        if (digitalRead(A1) == 0)
-            {
-            fAnalogPin1 = true;
-            fCheckPinA1 = true;
-            }
-        }
-
-    if (fAnalogPin1)
-        {
-        // copy current state of Pin A1 to the Green LED.
-        gpio.setGreen(digitalRead(A1));
-        }
-    else
         gpio.setGreen(false);
+        gpio.setRed(false);
 
-    if (!fCheckPinA2)
-        {
-        // check the connection pin A2
-        if (digitalRead(A2) == 0)
-            {
-            fAnalogPin2 = true;
-            fCheckPinA2 = true;
-            }
-        }
-
-    if (fAnalogPin2)
-        {
-        // copy current state of Pin A2 to the Green LED.
-        gpio.setRed(digitalRead(A2));
+        // set flags of Pin A1 and A2 to false.
+        // this used to check A1/A2 when disabling the flag fDisableLed
+        fAnalogPin1 = false;
+        fAnalogPin2 = false;
+        fCheckPinA1 = false;
+        fCheckPinA2 = false;
         }
     else
-        gpio.setRed(false);
+        {
+        if (!fCheckPinA1)
+            {
+            // check the connection pin A1
+            if (digitalRead(A1) == 0)
+                {
+                fAnalogPin1 = true;
+                fCheckPinA1 = true;
+                }
+            }
+
+        if (fAnalogPin1)
+            {
+            // copy current state of Pin A1 to the Green LED.
+            gpio.setGreen(digitalRead(A1));
+            }
+        else
+            gpio.setGreen(false);
+
+        if (!fCheckPinA2)
+            {
+            // check the connection pin A2
+            if (digitalRead(A2) == 0)
+                {
+                fAnalogPin2 = true;
+                fCheckPinA2 = true;
+                }
+            }
+
+        if (fAnalogPin2)
+            {
+            // copy current state of Pin A2 to the Green LED.
+            gpio.setRed(digitalRead(A2));
+            }
+        else
+            gpio.setRed(false);
+        }
     }
