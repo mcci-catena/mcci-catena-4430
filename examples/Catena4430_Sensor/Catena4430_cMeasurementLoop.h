@@ -216,6 +216,17 @@ public:
     void deepSleepPrepare();
     void deepSleepRecovery();
 
+	enum OPERATING_FLAGS : uint32_t
+		{
+		fUnattended = 1 << 0,
+		fManufacturingTest = 1 << 1,
+		fConfirmedUplink = 1 << 16,
+		fDisableDeepSleep = 1 << 17,
+		fQuickLightSleep = 1 << 18,
+		fDeepSleepTest = 1 << 19,                
+		fDisableLed = 1 << 30,
+		};
+
     enum DebugFlags : std::uint32_t
         {
         kError      = 1 << 0,
