@@ -42,7 +42,11 @@ cMeasurementLoop::fillTxBuffer(
     cMeasurementLoop::TxBuffer_t& b, Measurement const &mData
     )
     {
-    auto const savedLed = gLed.Set(McciCatena::LedPattern::Measuring);
+    auto const savedLed = gLed.Set(McciCatena::LedPattern::Off);
+    if (!(this->fDisableLED))
+        {
+        gLed.Set(McciCatena::LedPattern::Measuring);
+        }
 
     // initialize the message buffer to an empty state
     b.begin();
@@ -134,5 +138,6 @@ cMeasurementLoop::fillTxBuffer(
             }
         }
 
-    gLed.Set(savedLed);
+    if (!(this->fDisableLED))
+        gLed.Set(savedLed);
     }

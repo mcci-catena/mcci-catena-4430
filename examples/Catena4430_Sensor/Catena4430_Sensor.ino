@@ -69,7 +69,6 @@ cMeasurementLoop gMeasurementLoop;
 Catena_Mx25v8035f gFlash;
 
 unsigned ledCount;
-bool fDisableLED;
 bool fAnalogPin1;
 bool fAnalogPin2;
 bool fCheckPinA1;
@@ -131,12 +130,6 @@ void setup_platform()
                     /* wait for USB attach */
                     yield();
             }
-    
-    if ((gCatena.GetOperatingFlags() &
-            static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
-            {
-            fDisableLED = true;
-            }
     }
 
 static constexpr const char *filebasename(const char *s)
@@ -192,6 +185,13 @@ void setup_gpio()
     gLed.begin();
     gCatena.registerObject(&gLed);
     gLed.Set(LedPattern::FastFlash);
+
+    if ((gCatena.GetOperatingFlags() &
+        static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
+        {
+        gMeasurementLoop.fDisableLED = true;
+        gLed.Set(McciCatena::LedPattern::Off);
+        }
     }
 
 void setup_rtc()
@@ -269,10 +269,7 @@ void loop()
     {
     gCatena.poll();
     
-    // copy current PIR state to the blue LED.
-    gpio.setBlue(digitalRead(A0));
-    
-    if (fDisableLED)
+    if (gMeasurementLoop.fDisableLED)
         {
         gpio.setGreen(false);
         gpio.setRed(false);
@@ -286,6 +283,9 @@ void loop()
         }
     else
         {
+        // copy current PIR state to the blue LED.
+        gpio.setBlue(digitalRead(A0));
+
         if (!fCheckPinA1)
             {
             // check the connection pin A1

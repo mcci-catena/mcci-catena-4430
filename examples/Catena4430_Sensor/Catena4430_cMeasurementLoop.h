@@ -288,6 +288,9 @@ public:
     // concrete type for uplink data buffer
     using TxBuffer_t = McciCatena::AbstractTxBuffer_t<MeasurementFormat::kTxBufferSize>;
 
+    // flag to disable LED
+    bool fDisableLED;
+
     // initialize measurement FSM.
     void begin();
     void end();

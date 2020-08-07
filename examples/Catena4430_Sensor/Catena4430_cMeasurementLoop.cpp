@@ -150,8 +150,11 @@ cMeasurementLoop::fsmDispatch(
             // reset the counters.
             this->resetPirAccumulation();
 
-            // set the LEDs to flash accordingly.
-            gLed.Set(McciCatena::LedPattern::Sleeping);
+            if (!(this->fDisableLED))
+                {
+                // set the LEDs to flash accordingly.
+                gLed.Set(McciCatena::LedPattern::Sleeping);
+                }
             }
 
         if (this->m_rqInactive)
@@ -393,7 +396,11 @@ void cMeasurementLoop::startTransmission(
     cMeasurementLoop::TxBuffer_t &b
     )
     {
-    auto const savedLed = gLed.Set(McciCatena::LedPattern::Sending);
+    auto const savedLed = gLed.Set(McciCatena::LedPattern::Off);
+    if (!(this->fDisableLED))
+        {
+        gLed.Set(McciCatena::LedPattern::Sending);
+        }
 
     // by using a lambda, we can access the private contents
     auto sendBufferDoneCb =
@@ -716,8 +723,11 @@ void cMeasurementLoop::doSleepAlert(bool fDeepSleep)
                             deepSleepDelay
                             );
 
-        // sleep and print
-        gLed.Set(McciCatena::LedPattern::TwoShort);
+        if (!(this->fDisableLED))
+            {
+            // sleep and print
+            gLed.Set(McciCatena::LedPattern::TwoShort);
+            }
 
         for (auto n = deepSleepDelay; n > 0; --n)
             {
