@@ -120,16 +120,89 @@ void setup()
 
 void setup_platform()
     {
+    const uint32_t resetReason = READ_REG(RCC->CSR);
+    const uint32_t setDisableLedFlag = 0x40000000;
+    const uint32_t clearDisableLedFlag = 0x0FFFFFFF;
+    const uint32_t setResetFlag = 0x08000000;
+    const uint32_t clearResetFlag = 0xF8FFFFFF;
+    uint32_t savedFlag;
+
     gCatena.begin();
+    savedFlag = gCatena.GetOperatingFlags();
 
     // if running unattended, don't wait for USB connect.
     if (! (gCatena.GetOperatingFlags() &
-            static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+        static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+        {
+        while (!Serial)
+            /* wait for USB attach */
+            yield();
+        }
+
+    // check for pin reset and second reset
+    if ((resetReason & RCC_CSR_PINRSTF) &&
+        (savedFlag & static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fReset))
+        )
+        {
+        // check if LEDs are disabled
+        if (savedFlag & static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed))
             {
-            while (!Serial)
-                    /* wait for USB attach */
-                    yield();
+            // clear flag to disable LEDs
+            savedFlag &= clearDisableLedFlag;
+            gCatena.getFram()->saveField(
+                cFramStorage::StandardKeys::kOperatingFlags,
+                savedFlag
+                );
             }
+
+        // if LEDs are not disabled
+        else
+            {
+            // set flag to disable LEDs
+            savedFlag |= setDisableLedFlag;
+            gCatena.getFram()->saveField(
+                cFramStorage::StandardKeys::kOperatingFlags,
+                savedFlag
+                );
+            }
+
+        // clear the reset flag
+        gCatena.getFram()->saveField(
+            cFramStorage::StandardKeys::kOperatingFlags,
+            (savedFlag & clearResetFlag)
+            );
+
+        // update operatingFlag in the library
+        gCatena.SetOperatingFlags(savedFlag & clearResetFlag);
+        }
+
+    // check for pin reset
+    else if (resetReason & RCC_CSR_PINRSTF)
+        {
+        // set the reset flag
+        gCatena.getFram()->saveField(
+            cFramStorage::StandardKeys::kOperatingFlags,
+            (savedFlag | setResetFlag)
+            );
+
+        delay(3000);
+
+        // clear the reset flag
+        gCatena.getFram()->saveField(
+            cFramStorage::StandardKeys::kOperatingFlags,
+            (savedFlag & clearResetFlag)
+            );
+
+        // update operatingFlag in the library
+        gCatena.SetOperatingFlags(savedFlag & clearResetFlag);
+        }
+
+    if ((gCatena.GetOperatingFlags() &
+        static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
+        {
+        gMeasurementLoop.fDisableLED = true;
+        gLed.Set(McciCatena::LedPattern::Off);
+        }
     }
 
 static constexpr const char *filebasename(const char *s)
@@ -184,14 +257,7 @@ void setup_gpio()
     // set up the LED
     gLed.begin();
     gCatena.registerObject(&gLed);
-    gLed.Set(LedPattern::FastFlash);
-
-    if ((gCatena.GetOperatingFlags() &
-        static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
-        {
-        gMeasurementLoop.fDisableLED = true;
-        gLed.Set(McciCatena::LedPattern::Off);
-        }
+    gLed.Set(LedPattern::On);
     }
 
 void setup_rtc()
