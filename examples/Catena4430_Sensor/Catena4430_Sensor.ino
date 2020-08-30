@@ -196,13 +196,6 @@ void setup_platform()
         // update operatingFlag in the library
         gCatena.SetOperatingFlags(savedFlag & clearResetFlag);
         }
-
-    if ((gCatena.GetOperatingFlags() &
-        static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
-        {
-        gMeasurementLoop.fDisableLED = true;
-        gLed.Set(McciCatena::LedPattern::Off);
-        }
     }
 
 static constexpr const char *filebasename(const char *s)
@@ -257,7 +250,14 @@ void setup_gpio()
     // set up the LED
     gLed.begin();
     gCatena.registerObject(&gLed);
-    gLed.Set(LedPattern::On);
+    gLed.Set(LedPattern::FastFlash);
+
+    if ((gCatena.GetOperatingFlags() &
+        static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
+        {
+        gMeasurementLoop.fDisableLED = true;
+        gLed.Set(McciCatena::LedPattern::Off);
+        }
     }
 
 void setup_rtc()
