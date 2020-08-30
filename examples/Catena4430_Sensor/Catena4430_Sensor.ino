@@ -38,6 +38,9 @@ static_assert(
     );
 
 constexpr std::uint32_t kAppVersion = makeVersion(0,3,4,0);
+constexpr std::uint32_t kDoubleResetWaitMs = 500;
+constexpr std::uint32_t kSetDoubleResetMagic = 0xCA44301;
+constexpr std::uint32_t kClearDoubleResetMagic = 0xCA44300;
 
 /****************************************************************************\
 |
@@ -73,6 +76,7 @@ bool fAnalogPin1;
 bool fAnalogPin2;
 bool fCheckPinA1;
 bool fCheckPinA2;
+bool fToggle;
 
 /****************************************************************************\
 |
@@ -106,6 +110,8 @@ sMyExtraCommands_top(
 
 void setup()
     {
+    setup_double_reset();
+
     setup_platform();
     setup_printSignOn();
 
@@ -118,18 +124,71 @@ void setup()
     setup_start();
     }
 
+void setup_double_reset()
+    {
+    const uint32_t resetReason = READ_REG(RCC->CSR);
+    if (resetReason & RCC_CSR_PINRSTF)
+        {
+        if (RTC->BKP0R == kSetDoubleResetMagic)
+            {
+            fToggle = true;
+            RTC->BKP0R = kClearDoubleResetMagic;
+            }
+        else
+            {
+            RTC->BKP0R = kSetDoubleResetMagic;
+            delay(kDoubleResetWaitMs);
+            RTC->BKP0R = kClearDoubleResetMagic;
+            }
+        }
+    }
+
 void setup_platform()
     {
+    const uint32_t setDisableLedFlag = 0x40000000;
+    const uint32_t clearDisableLedFlag = 0x0FFFFFFF;
+    uint32_t savedFlag;
+
     gCatena.begin();
+    savedFlag = gCatena.GetOperatingFlags();
 
     // if running unattended, don't wait for USB connect.
     if (! (gCatena.GetOperatingFlags() &
-            static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+        static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+        {
+        while (!Serial)
+            /* wait for USB attach */
+            yield();
+        }
+
+    // check for pin reset and second reset
+    if (fToggle)
+        {
+        // check if LEDs are disabled
+        if (savedFlag & static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed))
             {
-            while (!Serial)
-                    /* wait for USB attach */
-                    yield();
+            // clear flag to disable LEDs
+            savedFlag &= clearDisableLedFlag;
+            gCatena.getFram()->saveField(
+                cFramStorage::StandardKeys::kOperatingFlags,
+                savedFlag
+                );
             }
+
+        // if LEDs are not disabled
+        else
+            {
+            // set flag to disable LEDs
+            savedFlag |= setDisableLedFlag;
+            gCatena.getFram()->saveField(
+                cFramStorage::StandardKeys::kOperatingFlags,
+                savedFlag
+                );
+            }
+
+        // update operatingFlag in the library
+        gCatena.SetOperatingFlags(savedFlag);
+        }
     }
 
 static constexpr const char *filebasename(const char *s)
