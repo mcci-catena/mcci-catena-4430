@@ -18,8 +18,10 @@ Author:
 #include <Catena4430.h>
 #include <arduino_lmic.h>
 #include <Catena4430_Sensor.h>
+#include <Catena_Si1133.h>
 
 using namespace McciCatena4430;
+using namespace McciCatena;
 
 extern c4430Gpios gpio;
 extern cMeasurementLoop gMeasurementLoop;
@@ -71,7 +73,15 @@ void cMeasurementLoop::begin()
     if (this->m_si1133.begin())
         {
         this->m_fSi1133 = true;
-        this->m_si1133.configure(0, CATENA_SI1133_MODE_White);
+
+        auto const measConfig =	Catena_Si1133::ChannelConfiguration_t()
+            .setAdcMux(Catena_Si1133::InputLed_t::LargeWhite)
+            .setSwGainCode(7)
+            .setHwGainCode(4)
+            .setPostShift(1)
+            .set24bit(false);
+
+        this->m_si1133.configure(0, measConfig, 0);
         }
     else
         {

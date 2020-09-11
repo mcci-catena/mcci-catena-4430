@@ -18,8 +18,6 @@ Author:
 
 #pragma once
 
-#include "Catena4430_cMeasurementLoop.h"
-
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_BME280.h>
