@@ -91,7 +91,7 @@ public:
         struct Light
             {
             std::uint16_t           IR;
-            std::uint16_t           White;
+            float                   White;
             std::uint16_t           UV;
             } light;
         struct Activity
@@ -148,7 +148,7 @@ public:
         struct Light
             {
             // "white" light, in w/m^2
-            std::uint16_t           White;
+            float                   White;
             };
 
         // count of food pellets
