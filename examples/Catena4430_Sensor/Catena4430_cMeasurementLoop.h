@@ -148,7 +148,7 @@ public:
         struct Light
             {
             // "white" light, in w/m^2
-            std::uint16_t           White;
+            float                   White;
             };
 
         // count of food pellets
@@ -201,7 +201,7 @@ class cMeasurementLoop : public McciCatena::cPollableObject
     {
 public:
     // some parameters
-    static constexpr std::uint8_t kUplinkPort = 1;
+    static constexpr std::uint8_t kUplinkPort = 2;
     static constexpr bool kEnableDeepSleep = false;
     static constexpr unsigned kMaxActivityEntries = 8;
     using MeasurementFormat = cMeasurementFormat22<kMaxActivityEntries>;

@@ -362,13 +362,13 @@ void cMeasurementLoop::measureActivity()
 
 void cMeasurementLoop::updateLightMeasurements()
     {
-    uint16_t data[1];
+    uint32_t data[1];
 
     this->m_si1133.readMultiChannelData(data, 1);
     this->m_si1133.stop();
 
     this->m_data.flags |= Flags::Light;
-    this->m_data.light.White = data[0];
+    this->m_data.light.White = (float) data[0];
     }
 
 void cMeasurementLoop::resetPirAccumulation()
