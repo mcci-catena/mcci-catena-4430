@@ -183,7 +183,7 @@ function DecodeSflt16(Parse)
 
 
 function DecodeLight(Parse) {
-    return DecodeUflt16(Parse);
+    return DecodeU16(Parse);
 }
 
 function DecodeActivity(Parse) {
@@ -296,7 +296,7 @@ function Decoder(bytes, port) {
     if (flags & 0x20) {
         // we have light
         decoded.irradiance = {};
-        decoded.irradiance.White = DecodeLight(Parse) * Math.pow(2.0, 23);
+        decoded.irradiance.White = DecodeLight(Parse);
     }
 
     if (flags & 0x40) {

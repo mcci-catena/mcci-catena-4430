@@ -368,7 +368,7 @@ void cMeasurementLoop::updateLightMeasurements()
     this->m_si1133.stop();
 
     this->m_data.flags |= Flags::Light;
-    this->m_data.light.White = (float) data[0] / pow(2.0, 23));
+    this->m_data.light.White = data[0];
     }
 
 void cMeasurementLoop::resetPirAccumulation()

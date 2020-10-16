@@ -103,8 +103,8 @@ cMeasurementLoop::fillTxBuffer(
     if ((mData.flags & Flags::Light) != Flags(0))
         {
         gCatena.SafePrintf(
-                "Si1133:  %d White\n",
-                (int) (mData.light.White * pow(2.0, 23))
+                "Si1133:  %u White\n",
+                mData.light.White
                 );
 
         b.putLux(mData.light.White);
