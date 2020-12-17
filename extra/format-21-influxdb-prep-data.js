@@ -1,10 +1,16 @@
 /*
 
-Node: prepare for database
+Name:   format-21-influxdb-prep-data.js
 
 Function:
-    Arrange the experimental data into a form acceptable to InfluxDB
-    
+    Decode port 0x01 format 0x21 messages for Node-RED.
+
+Copyright and License:
+    See accompanying LICENSE file at https://github.com/mcci-catena/MCCI-Catena-4430/
+
+Author:
+    Terry Moore, MCCI Corporation   October 2019
+
 */
 
 // we start by creating an object that will be the result (and the input
