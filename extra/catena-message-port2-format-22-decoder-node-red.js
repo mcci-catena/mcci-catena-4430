@@ -385,5 +385,4 @@ msg.local =
         applicationName: "Mouse activity sensor fmt 0x22"
     };
 
-msg.payload_raw = msg.network_payload.payload.payload_raw;
 return msg;
