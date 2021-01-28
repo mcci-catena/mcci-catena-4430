@@ -273,7 +273,7 @@ function Decoder(bytes, port) {
     }
 
     if (flags & 0x4) {
-        decoded.Vsys = DecodeV(Parse);
+        decoded.Vbus = DecodeV(Parse);
     }
 
     if (flags & 0x8) {
