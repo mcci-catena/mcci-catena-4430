@@ -1,9 +1,9 @@
 /*
 
-Name:   catena-message-port1-format-22-decoder-node-red.js
+Name:   catena-message-port2-format-22-decoder-node-red.js
 
 Function:
-    Decode port 0x01 format 0x22 messages for Node-RED.
+    Decode port 0x02 format 0x22 messages for Node-RED.
 
 Copyright and License:
     See accompanying LICENSE file at https://github.com/mcci-catena/MCCI-Catena-4430/
@@ -13,7 +13,7 @@ Author:
 
 */
 
-// this could be `#include "catena-message-port1-format-21-decoder-ttn.js"`
+// this could be `#include "catena-message-port2-format-22-decoder-ttn.js"`
 // but that's not a thing.
 // calculate dewpoint (degrees C) given temperature (C) and relative humidity (0..100)
 // from http://andrew.rsmas.miami.edu/bmcnoldy/Humidity.html
@@ -183,7 +183,7 @@ function DecodeSflt16(Parse)
 
 
 function DecodeLight(Parse) {
-    return DecodeU16(Parse);
+    return DecodeUflt16(Parse);
 }
 
 function DecodeActivity(Parse) {
@@ -246,7 +246,7 @@ function Decoder(bytes, port) {
     // (array) of bytes to an object of fields.
     var decoded = {};
 
-    if (! (port === 1))
+    if (! (port === 2))
         return null;
 
     var uFormat = bytes[0];
@@ -296,7 +296,7 @@ function Decoder(bytes, port) {
     if (flags & 0x20) {
         // we have light
         decoded.irradiance = {};
-        decoded.irradiance.White = DecodeLight(Parse);
+        decoded.irradiance.White = DecodeLight(Parse) * Math.pow(2.0, 24);
     }
 
     if (flags & 0x40) {
@@ -322,7 +322,7 @@ function Decoder(bytes, port) {
     return decoded;
 }
 
-// end of insertion of catena-message-port1-format-21-decoder-ttn.js
+// end of insertion of catena-message-port2-format-22-decoder-ttn.js
 
 /*
 
@@ -362,8 +362,8 @@ var result = Decoder(bytes, msg.port);
 if (result === null) {
     // not one of ours: report an error, return without a value,
     // so that Node-RED doesn't propagate the message any further.
-    var eMsg = "not port 1/fmt 0x21! port=" + msg.port.toString();
-    if (port === 1) {
+    var eMsg = "not port 2/fmt 0x22! port=" + msg.port.toString();
+    if (port === 2) {
         if (Buffer.byteLength(bytes) > 0) {
             eMsg = eMsg + " fmt=" + bytes[0].toString();
         } else {
@@ -385,5 +385,4 @@ msg.local =
         applicationName: "Mouse activity sensor fmt 0x22"
     };
 
-msg.payload_raw = msg.network_payload.payload.payload_raw;
 return msg;

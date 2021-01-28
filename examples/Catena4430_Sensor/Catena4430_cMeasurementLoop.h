@@ -18,8 +18,6 @@ Author:
 
 #pragma once
 
-#include "Catena4430_cMeasurementLoop.h"
-
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_BME280.h>
@@ -150,7 +148,7 @@ public:
         struct Light
             {
             // "white" light, in w/m^2
-            std::uint16_t           White;
+            float                   White;
             };
 
         // count of food pellets
@@ -203,7 +201,7 @@ class cMeasurementLoop : public McciCatena::cPollableObject
     {
 public:
     // some parameters
-    static constexpr std::uint8_t kUplinkPort = 1;
+    static constexpr std::uint8_t kUplinkPort = 2;
     static constexpr bool kEnableDeepSleep = false;
     static constexpr unsigned kMaxActivityEntries = 8;
     using MeasurementFormat = cMeasurementFormat22<kMaxActivityEntries>;
@@ -212,6 +210,20 @@ public:
     using Flags = MeasurementFormat::Flags;
     static constexpr std::uint8_t kMessageFormat = MeasurementFormat::kMessageFormat;
     static constexpr std::uint8_t kSdCardCSpin = D5;
+
+    void deepSleepPrepare();
+    void deepSleepRecovery();
+
+    enum OPERATING_FLAGS : uint32_t
+        {
+        fUnattended = 1 << 0,
+        fManufacturingTest = 1 << 1,
+        fConfirmedUplink = 1 << 16,
+        fDisableDeepSleep = 1 << 17,
+        fQuickLightSleep = 1 << 18,
+        fDeepSleepTest = 1 << 19,
+        fDisableLed = 1 << 30,
+        };
 
     enum DebugFlags : std::uint32_t
         {
@@ -274,6 +286,9 @@ public:
     // concrete type for uplink data buffer
     using TxBuffer_t = McciCatena::AbstractTxBuffer_t<MeasurementFormat::kTxBufferSize>;
 
+    // flag to disable LED
+    bool fDisableLED;
+
     // initialize measurement FSM.
     void begin();
     void end();
@@ -300,7 +315,9 @@ public:
         }
     void setVbus(float Vbus)
         {
-        this->m_fUsbPower = (Vbus > 3.0f);
+        // set threshold value as 4.0V as there is reverse voltage
+        // in vbus(~3.5V) while powered from battery in 4610. 
+        this->m_fUsbPower = (Vbus > 4.0f) ? true : false;
         }
 
     // request that the measurement loop be active/inactive
@@ -325,8 +342,8 @@ private:
     bool checkDeepSleep();
     void doSleepAlert(bool fDeepSleep);
     void doDeepSleep();
-    void deepSleepPrepare();
-    void deepSleepRecovery();
+    // void deepSleepPrepare();
+    // void deepSleepRecovery();
 
     // read data
     void updateSynchronousMeasurements();

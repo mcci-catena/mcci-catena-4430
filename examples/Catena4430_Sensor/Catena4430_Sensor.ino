@@ -37,7 +37,10 @@ static_assert(
     "This sketch requires Catena-Arduino-Platform v0.17.0.40 or later"
     );
 
-constexpr std::uint32_t kAppVersion = makeVersion(0,3,4,0);
+constexpr std::uint32_t kAppVersion = makeVersion(0,3,4,3);
+constexpr std::uint32_t kDoubleResetWaitMs = 500;
+constexpr std::uint32_t kSetDoubleResetMagic = 0xCA44301;
+constexpr std::uint32_t kClearDoubleResetMagic = 0xCA44300;
 
 /****************************************************************************\
 |
@@ -69,6 +72,11 @@ cMeasurementLoop gMeasurementLoop;
 Catena_Mx25v8035f gFlash;
 
 unsigned ledCount;
+bool fAnalogPin1;
+bool fAnalogPin2;
+bool fCheckPinA1;
+bool fCheckPinA2;
+bool fToggle;
 
 /****************************************************************************\
 |
@@ -102,6 +110,8 @@ sMyExtraCommands_top(
 
 void setup()
     {
+    setup_double_reset();
+
     setup_platform();
     setup_printSignOn();
 
@@ -114,18 +124,71 @@ void setup()
     setup_start();
     }
 
+void setup_double_reset()
+    {
+    const uint32_t resetReason = READ_REG(RCC->CSR);
+    if (resetReason & RCC_CSR_PINRSTF)
+        {
+        if (RTC->BKP0R == kSetDoubleResetMagic)
+            {
+            fToggle = true;
+            RTC->BKP0R = kClearDoubleResetMagic;
+            }
+        else
+            {
+            RTC->BKP0R = kSetDoubleResetMagic;
+            delay(kDoubleResetWaitMs);
+            RTC->BKP0R = kClearDoubleResetMagic;
+            }
+        }
+    }
+
 void setup_platform()
     {
+    const uint32_t setDisableLedFlag = 0x40000000;
+    const uint32_t clearDisableLedFlag = 0x0FFFFFFF;
+    uint32_t savedFlag;
+
     gCatena.begin();
+    savedFlag = gCatena.GetOperatingFlags();
 
     // if running unattended, don't wait for USB connect.
     if (! (gCatena.GetOperatingFlags() &
-            static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+        static_cast<uint32_t>(gCatena.OPERATING_FLAGS::fUnattended)))
+        {
+        while (!Serial)
+            /* wait for USB attach */
+            yield();
+        }
+
+    // check for pin reset and second reset
+    if (fToggle)
+        {
+        // check if LEDs are disabled
+        if (savedFlag & static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed))
             {
-            while (!Serial)
-                    /* wait for USB attach */
-                    yield();
+            // clear flag to disable LEDs
+            savedFlag &= clearDisableLedFlag;
+            gCatena.getFram()->saveField(
+                cFramStorage::StandardKeys::kOperatingFlags,
+                savedFlag
+                );
             }
+
+        // if LEDs are not disabled
+        else
+            {
+            // set flag to disable LEDs
+            savedFlag |= setDisableLedFlag;
+            gCatena.getFram()->saveField(
+                cFramStorage::StandardKeys::kOperatingFlags,
+                savedFlag
+                );
+            }
+
+        // update operatingFlag in the library
+        gCatena.SetOperatingFlags(savedFlag);
+        }
     }
 
 static constexpr const char *filebasename(const char *s)
@@ -181,6 +244,13 @@ void setup_gpio()
     gLed.begin();
     gCatena.registerObject(&gLed);
     gLed.Set(LedPattern::FastFlash);
+
+    if ((gCatena.GetOperatingFlags() &
+        static_cast<uint32_t>(gMeasurementLoop.OPERATING_FLAGS::fDisableLed)))
+        {
+        gMeasurementLoop.fDisableLED = true;
+        gLed.Set(McciCatena::LedPattern::Off);
+        }
     }
 
 void setup_rtc()
@@ -257,25 +327,58 @@ void setup_start()
 void loop()
     {
     gCatena.poll();
-
-    // copy current PIR state to the blue LED.
-    gpio.setBlue(digitalRead(A0));
-
-    // if it's time to update the LEDs, advance to the next step.
-    if (ledTimer.isready())
+    
+    if (gMeasurementLoop.fDisableLED)
         {
-        const std::uint8_t ledMask = (gpio.kRedMask | gpio.kGreenMask);
-        std::uint8_t ledValue;
+        gpio.setGreen(false);
+        gpio.setRed(false);
 
-        unsigned iGpio = 2 - ledCount;
+        // set flags of Pin A1 and A2 to false.
+        // this used to check A1/A2 when disabling the flag fDisableLed
+        fAnalogPin1 = false;
+        fAnalogPin2 = false;
+        fCheckPinA1 = false;
+        fCheckPinA2 = false;
+        }
+    else
+        {
+        // copy current PIR state to the blue LED.
+        gpio.setBlue(digitalRead(A0));
 
-        ledCount = (ledCount + 1) % 2;
+        if (!fCheckPinA1)
+            {
+            // check the connection pin A1
+            if (digitalRead(A1) == 0)
+                {
+                fAnalogPin1 = true;
+                fCheckPinA1 = true;
+                }
+            }
 
-        if (ledCount == 0)
-            ledValue = gpio.kRedMask;
+        if (fAnalogPin1)
+            {
+            // copy current state of Pin A1 to the Green LED.
+            gpio.setGreen(digitalRead(A1));
+            }
         else
-            ledValue = gpio.kGreenMask;
+            gpio.setGreen(false);
 
-        gpio.setLeds(ledMask, ledValue);
+        if (!fCheckPinA2)
+            {
+            // check the connection pin A2
+            if (digitalRead(A2) == 0)
+                {
+                fAnalogPin2 = true;
+                fCheckPinA2 = true;
+                }
+            }
+
+        if (fAnalogPin2)
+            {
+            // copy current state of Pin A2 to the Green LED.
+            gpio.setRed(digitalRead(A2));
+            }
+        else
+            gpio.setRed(false);
         }
     }

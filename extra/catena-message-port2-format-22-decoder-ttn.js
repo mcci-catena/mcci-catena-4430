@@ -1,20 +1,18 @@
 /*
 
-Name:   catena-message-port1-format-22-decoder-node-red.js
+Name:   catena-message-port2-format-22-decoder-ttn.js
 
 Function:
-    Decode port 0x01 format 0x22 messages for Node-RED.
+    Decode port 0x02 format 0x22 messages for TTN console.
 
 Copyright and License:
     See accompanying LICENSE file at https://github.com/mcci-catena/MCCI-Catena-4430/
 
 Author:
-    Terry Moore, MCCI Corporation   October 2019
+    Terry Moore, MCCI Corporation   August 2019
 
 */
 
-// this could be `#include "catena-message-port1-format-21-decoder-ttn.js"`
-// but that's not a thing.
 // calculate dewpoint (degrees C) given temperature (C) and relative humidity (0..100)
 // from http://andrew.rsmas.miami.edu/bmcnoldy/Humidity.html
 // rearranged for efficiency and to deal sanely with very low (< 1%) RH
@@ -183,7 +181,7 @@ function DecodeSflt16(Parse)
 
 
 function DecodeLight(Parse) {
-    return DecodeU16(Parse);
+    return DecodeUflt16(Parse);
 }
 
 function DecodeActivity(Parse) {
@@ -246,7 +244,7 @@ function Decoder(bytes, port) {
     // (array) of bytes to an object of fields.
     var decoded = {};
 
-    if (! (port === 1))
+    if (! (port === 2))
         return null;
 
     var uFormat = bytes[0];
@@ -259,8 +257,9 @@ function Decoder(bytes, port) {
     // i is used as the index into the message. Start with the time.
     Parse.i = 1;
 
-    // fetch time; convert to database time (which is UTC-like ignoring leap seconds)
-    decoded.time = new Date((DecodeU32(Parse) + /* gps epoch to posix */ 315964800 - /* leap seconds */ 17) * 1000);
+    // fetch time, convert from GPS to ISO time assuming 17 leap seconds,
+    // and then convert to JSON format.
+    decoded.time = new Date((DecodeU32(Parse) + 315964800 - 17) * 1000).toJSON();
 
     // fetch the bitmap.
     var flags = bytes[Parse.i++];
@@ -274,7 +273,7 @@ function Decoder(bytes, port) {
     }
 
     if (flags & 0x4) {
-        decoded.Vbus = DecodeV(Parse);
+        decoded.Vsys = DecodeV(Parse);
     }
 
     if (flags & 0x8) {
@@ -296,7 +295,7 @@ function Decoder(bytes, port) {
     if (flags & 0x20) {
         // we have light
         decoded.irradiance = {};
-        decoded.irradiance.White = DecodeLight(Parse);
+        decoded.irradiance.White = DecodeLight(Parse) * Math.pow(2.0, 24);
     }
 
     if (flags & 0x40) {
@@ -321,69 +320,3 @@ function Decoder(bytes, port) {
 
     return decoded;
 }
-
-// end of insertion of catena-message-port1-format-21-decoder-ttn.js
-
-/*
-
-Node-RED function body.
-
-Input:
-    msg     the object to be decoded.
-
-            msg.payload_raw is taken
-            as the raw payload if present; otheriwse msg.payload
-            is taken to be a raw payload.
-
-            msg.port is taken to be the LoRaWAN port nubmer.
-
-
-Returns:
-    This function returns a message body. It's a mutation of the
-    input msg; msg.payload is changed to the decoded data, and
-    msg.local is set to additional application-specific information.
-
-*/
-
-var bytes;
-
-if ("payload_raw" in msg) {
-    // the console already decoded this
-    bytes = msg.payload_raw;  // pick up data for convenience
-    // msg.payload_fields still has the decoded data from ttn
-} else {
-    // no console decode
-    bytes = msg.payload;  // pick up data for conveneince
-}
-
-// try to decode.
-var result = Decoder(bytes, msg.port);
-
-if (result === null) {
-    // not one of ours: report an error, return without a value,
-    // so that Node-RED doesn't propagate the message any further.
-    var eMsg = "not port 1/fmt 0x21! port=" + msg.port.toString();
-    if (port === 1) {
-        if (Buffer.byteLength(bytes) > 0) {
-            eMsg = eMsg + " fmt=" + bytes[0].toString();
-        } else {
-            eMsg = eMsg + " <no fmt byte>"
-        }
-    }
-    node.error(eMsg);
-    return;
-}
-
-// now update msg with the new payload and new .local field
-// the old msg.payload is overwritten.
-msg.payload = result;
-msg.local =
-    {
-        nodeType: "Catena 4430",
-        platformType: "Catena 4610",
-        radioType: "Murata",
-        applicationName: "Mouse activity sensor fmt 0x22"
-    };
-
-msg.payload_raw = msg.network_payload.payload.payload_raw;
-return msg;

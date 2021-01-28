@@ -17,8 +17,21 @@ Author:
 
 #include <Catena4430.h>
 #include <arduino_lmic.h>
+#include <Catena4430_Sensor.h>
+#include <Catena_Si1133.h>
 
 using namespace McciCatena4430;
+using namespace McciCatena;
+
+extern c4430Gpios gpio;
+extern cMeasurementLoop gMeasurementLoop;
+
+static constexpr uint8_t kVddPin = D11;
+
+void lptimSleep(uint32_t timeOut);
+uint32_t HAL_AddTick(uint32_t delta);
+
+uint32_t timeOut = 200;
 
 /****************************************************************************\
 |
@@ -60,7 +73,15 @@ void cMeasurementLoop::begin()
     if (this->m_si1133.begin())
         {
         this->m_fSi1133 = true;
-        this->m_si1133.configure(0, CATENA_SI1133_MODE_White);
+
+        auto const measConfig =	Catena_Si1133::ChannelConfiguration_t()
+            .setAdcMux(Catena_Si1133::InputLed_t::LargeWhite)
+            .setSwGainCode(7)
+            .setHwGainCode(4)
+            .setPostShift(1)
+            .set24bit(false);
+
+        this->m_si1133.configure(0, measConfig, 0);
         }
     else
         {
@@ -139,8 +160,11 @@ cMeasurementLoop::fsmDispatch(
             // reset the counters.
             this->resetPirAccumulation();
 
-            // set the LEDs to flash accordingly.
-            gLed.Set(McciCatena::LedPattern::Sleeping);
+            if (!(this->fDisableLED))
+                {
+                // set the LEDs to flash accordingly.
+                gLed.Set(McciCatena::LedPattern::Sleeping);
+                }
             }
 
         if (this->m_rqInactive)
@@ -175,7 +199,7 @@ cMeasurementLoop::fsmDispatch(
             // start SI1133 measurement (one-time)
             this->m_si1133.start(true);
             this->updateSynchronousMeasurements();
-            this->setTimer(100);
+            this->setTimer(1000);
             }
 
         if (this->m_si1133.isOneTimeReady())
@@ -338,13 +362,13 @@ void cMeasurementLoop::measureActivity()
 
 void cMeasurementLoop::updateLightMeasurements()
     {
-    uint16_t data[1];
+    uint32_t data[1];
 
     this->m_si1133.readMultiChannelData(data, 1);
     this->m_si1133.stop();
 
     this->m_data.flags |= Flags::Light;
-    this->m_data.light.White = data[0];
+    this->m_data.light.White = (float) data[0];
     }
 
 void cMeasurementLoop::resetPirAccumulation()
@@ -382,7 +406,11 @@ void cMeasurementLoop::startTransmission(
     cMeasurementLoop::TxBuffer_t &b
     )
     {
-    auto const savedLed = gLed.Set(McciCatena::LedPattern::Sending);
+    auto const savedLed = gLed.Set(McciCatena::LedPattern::Off);
+    if (!(this->fDisableLED))
+        {
+        gLed.Set(McciCatena::LedPattern::Sending);
+        }
 
     // by using a lambda, we can access the private contents
     auto sendBufferDoneCb =
@@ -480,7 +508,120 @@ void cMeasurementLoop::poll()
 
     if (fEvent)
         this->m_fsm.eval();
+
+    this->m_data.Vbus = gCatena.ReadVbus();
+    setVbus(this->m_data.Vbus);
+
+    if (!(this->m_fUsbPower) && !(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
+        lptimSleep(timeOut);
     }
+
+static void setup_lptim(uint32_t msec)
+    {
+    // enable clock to LPTIM1
+    __HAL_RCC_LPTIM1_CLK_ENABLE();
+    __HAL_RCC_LPTIM1_CLK_SLEEP_ENABLE();
+
+    auto const pLptim = LPTIM1;
+
+    // set LPTIM1 clock to LSE clock.
+    __HAL_RCC_LPTIM1_CONFIG(RCC_LPTIM1CLKSOURCE_LSE);
+
+    // disable everything so we can tweak the CFGR
+    pLptim->CR = 0;
+
+    // upcount from selected internal clock (which is LSE)
+    auto rCfg = pLptim->CFGR & ~0x01FEEEDF;
+    rCfg |=  0;
+    pLptim->CFGR = rCfg;
+
+    // enable the counter but don't start it
+    pLptim->CR = LPTIM_CR_ENABLE;
+    delayMicroseconds(100);
+
+    // Clear ICR and ISR registers
+    pLptim->ICR |= 0x3F;
+    pLptim->ISR &= 0x00;
+
+    // Auto-Reload Register is a 16-bit register
+    // set ARR to value between 0 to 0xFFFF ( < 1999 ms )
+    // must be done after enabling.
+    uint32_t timeoutCount;
+    timeoutCount = ((32768 * msec) / 1000);
+    pLptim->ARR = timeoutCount;
+
+    // Autoreload match interrupt
+    pLptim->IER |= LPTIM_IER_ARRMIE;
+
+    NVIC_SetPriority(LPTIM1_IRQn, 1);
+    NVIC_DisableIRQ(LPTIM1_IRQn);
+
+    // start in continuous mode.
+    pLptim->CR = LPTIM_CR_ENABLE | LPTIM_CR_CNTSTRT;
+
+    // enable LPTIM interrupt routine
+    NVIC_EnableIRQ(LPTIM1_IRQn);
+    }
+
+void lptimSleep(uint32_t timeOut)
+    {
+    uint32_t sleepTimeMS;
+    sleepTimeMS = timeOut;
+
+    setup_lptim(sleepTimeMS);
+
+    gMeasurementLoop.deepSleepPrepare();
+
+    HAL_SuspendTick();
+    HAL_PWR_EnterSTOPMode(
+          PWR_LOWPOWERREGULATOR_ON,
+          PWR_STOPENTRY_WFI
+          );
+
+    HAL_IncTick();
+    HAL_ResumeTick();
+    HAL_AddTick(sleepTimeMS);
+
+    gMeasurementLoop.deepSleepRecovery();
+    }
+
+uint32_t HAL_AddTick(
+   uint32_t delta
+    )
+    {
+    extern __IO uint32_t uwTick;
+    // copy old interrupt-enable state to flags.
+    uint32_t const flags = __get_PRIMASK();
+
+    // disable interrupts
+    __set_PRIMASK(1);
+
+    // observe uwTick, and advance it.
+    uint32_t const tickCount = uwTick + delta;
+
+    // save uwTick
+    uwTick = tickCount;
+
+    // restore interrupts (does nothing if ints were disabled on entry)
+    __set_PRIMASK(flags);
+
+    // return the new value of uwTick.
+    return tickCount;
+    }
+
+extern "C" {
+void LPTIM1_IRQHandler(void)
+    {
+    NVIC_ClearPendingIRQ(LPTIM1_IRQn);
+    if(LPTIM1->ISR & LPTIM_ISR_ARRM) //If there was a compare match
+        {
+        /* If the interrupt was enabled */
+        LPTIM1->ICR |= LPTIM_ICR_ARRMCF;
+        LPTIM1->ICR |= LPTIM_ICR_CMPOKCF;
+        LPTIM1->CR = 0;
+        }
+    }
+}
 
 /****************************************************************************\
 |
@@ -592,8 +733,11 @@ void cMeasurementLoop::doSleepAlert(bool fDeepSleep)
                             deepSleepDelay
                             );
 
-        // sleep and print
-        gLed.Set(McciCatena::LedPattern::TwoShort);
+        if (!(this->fDisableLED))
+            {
+            // sleep and print
+            gLed.Set(McciCatena::LedPattern::TwoShort);
+            }
 
         for (auto n = deepSleepDelay; n > 0; --n)
             {
@@ -643,6 +787,8 @@ void cMeasurementLoop::doDeepSleep()
 
 void cMeasurementLoop::deepSleepPrepare(void)
     {
+    pinMode(kVddPin, INPUT);
+
     Serial.end();
     Wire.end();
     SPI.end();
@@ -655,6 +801,9 @@ void cMeasurementLoop::deepSleepPrepare(void)
 
 void cMeasurementLoop::deepSleepRecovery(void)
     {
+    pinMode(kVddPin, OUTPUT);
+    digitalWrite(kVddPin, HIGH);
+    
     Serial.begin();
     Wire.begin();
     SPI.begin();
@@ -689,4 +838,3 @@ bool cMeasurementLoop::timedOut()
     this->m_fTimerEvent = false;
     return result;
     }
-

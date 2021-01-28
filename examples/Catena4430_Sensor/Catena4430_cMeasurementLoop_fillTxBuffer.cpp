@@ -42,7 +42,11 @@ cMeasurementLoop::fillTxBuffer(
     cMeasurementLoop::TxBuffer_t& b, Measurement const &mData
     )
     {
-    auto const savedLed = gLed.Set(McciCatena::LedPattern::Measuring);
+    auto const savedLed = gLed.Set(McciCatena::LedPattern::Off);
+    if (!(this->fDisableLED))
+        {
+        gLed.Set(McciCatena::LedPattern::Measuring);
+        }
 
     // initialize the message buffer to an empty state
     b.begin();
@@ -99,11 +103,11 @@ cMeasurementLoop::fillTxBuffer(
     if ((mData.flags & Flags::Light) != Flags(0))
         {
         gCatena.SafePrintf(
-                "Si1133:  %u White\n",
-                mData.light.White
+                "Si1133:  %d White\n",
+                (int) mData.light.White
                 );
 
-        b.putLux(mData.light.White);
+        b.putLux(LMIC_f2uflt16(mData.light.White / pow(2.0, 24)));
         }
 
     // put pellets
@@ -134,5 +138,6 @@ cMeasurementLoop::fillTxBuffer(
             }
         }
 
-    gLed.Set(savedLed);
+    if (!(this->fDisableLED))
+        gLed.Set(savedLed);
     }
