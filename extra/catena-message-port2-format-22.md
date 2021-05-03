@@ -6,23 +6,23 @@
 <!-- TOC depthFrom:2 updateOnSave:true -->
 
 - [Overall Message Format](#overall-message-format)
-    - [Timekeeping](#timekeeping)
+	- [Timekeeping](#timekeeping)
 - [Optional fields](#optional-fields)
-    - [Battery Voltage (field 0)](#battery-voltage-field-0)
-    - [System Voltage (field 1)](#system-voltage-field-1)
-    - [Bus Voltage (field 2)](#bus-voltage-field-2)
-    - [Boot counter (field 3)](#boot-counter-field-3)
-    - [Environmental Readings (field 4)](#environmental-readings-field-4)
-    - [Ambient Light (field 5)](#ambient-light-field-5)
-    - [Pellet consumption (field 6)](#pellet-consumption-field-6)
-    - [Activity Indication (field 7)](#activity-indication-field-7)
+	- [Battery Voltage (field 0)](#battery-voltage-field-0)
+	- [System Voltage (field 1)](#system-voltage-field-1)
+	- [Bus Voltage (field 2)](#bus-voltage-field-2)
+	- [Boot counter (field 3)](#boot-counter-field-3)
+	- [Environmental Readings (field 4)](#environmental-readings-field-4)
+	- [Ambient Light (field 5)](#ambient-light-field-5)
+	- [Pellet consumption (field 6)](#pellet-consumption-field-6)
+	- [Activity Indication (field 7)](#activity-indication-field-7)
 - [Data Formats](#data-formats)
-    - [`uint16`](#uint16)
-    - [`int16`](#int16)
-    - [`uint8`](#uint8)
-    - [`uflt16`](#uflt16)
-    - [`sflt16`](#sflt16)
-    - [`uint32`](#uint32)
+	- [`uint16`](#uint16)
+	- [`int16`](#int16)
+	- [`uint8`](#uint8)
+	- [`uflt16`](#uflt16)
+	- [`sflt16`](#sflt16)
+	- [`uint32`](#uint32)
 - [Test Vectors](#test-vectors)
 
 <!-- /TOC -->
@@ -272,7 +272,7 @@ The following input data can be used to test decoders.
 ```json
 {
   "irradiance": {
-    "White": 200
+    "White": 25
   },
   "time": 0
 }
@@ -346,7 +346,7 @@ The following input data can be used to test decoders.
   ],
   "boot": 42,
   "irradiance": {
-    "White": 200
+    "White": 25
   },
   "p": 1017.12,
   "pellets": [
