@@ -97,7 +97,9 @@ bool fToggle;
 static const cCommandStream::cEntry sMyExtraCommmands[] =
         {
         { "date", cmdDate },
+        { "dir", cmdDir },
         { "log", cmdLog },
+        { "tree", cmdDir },
         // other commands go here....
         };
 

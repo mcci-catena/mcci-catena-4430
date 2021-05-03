@@ -27,6 +27,7 @@ Author:
 #include <Catena4430_c4430Gpios.h>
 #include <Catena4430_cPCA9570.h>
 #include <Catena4430_cClockDriver_PCF8523.h>
+#include <SD.h>
 #include <SPI.h>
 #include "Catena4430_cMeasurementLoop.h"
 
@@ -50,5 +51,8 @@ extern  McciCatena::cBootloaderApi              gBootloaderApi;
 
 // the downloaer
 extern  McciCatena::cDownload                   gDownload;
+
+// the SD card
+extern  SDClass                                 gSD;
 
 #endif // !defined(_Catena4430_Sensor_h_)
