@@ -17,6 +17,8 @@ Author:
 
 #include "Catena4430_Sensor.h"
 
+#include <Catena_Download.h>
+
 #include <SD.h>
 #include <mcciadk_baselib.h>
 
@@ -313,3 +315,174 @@ cMeasurementLoop::writeSdCard(
     sdFinish();
     return fResult;
     }
+
+/*
+
+Name:	cMeasurementLoop::handleSdFirmwareUpdate()
+
+Index:  Name:   cMeasurementLoop::handleSdFirmwareUpdateCardUp()
+
+Function:
+    Check for firmware update request via SD card and handle it
+
+Definition:
+    bool cMeasurementLoop::handleSdFirmwareUpdate(
+        void
+        );
+
+    bool cMeasurementLoop::handleSdFirmwareUpdateCardUp(
+        void
+        );
+
+Description:
+    Check for a suitable file on the SD card. If found, copy to
+    flash. If successful, set the update flag, and rename the
+    update file so we won't consider it again.  handleSdFirmwareUpdateCardUp()
+    is simply the inner method, to be called as a wrapper once power is
+    up on the card.
+
+Returns:
+    True if an SD card was seen and all seemed in order (update
+    pending or not). False if some kind of I/O error stopped progress.
+
+Notes:
+    
+
+*/
+
+#define FUNCTION "cMeasurementLoop::handleSdFirmwareUpdate"
+
+bool
+cMeasurementLoop::handleSdFirmwareUpdate(
+    void
+    )
+    {
+    bool fResult = this->checkSdCard();
+    if (fResult)
+        {
+        fResult = this->handleSdFirmwareUpdateCardUp();
+        }
+    this->sdFinish();
+    return fResult;
+    }
+
+#undef FUNCTION
+
+#define FUNCTION "cMeasurementLoop::handleSdFirmwareUpdateCardUp"
+
+bool
+cMeasurementLoop::handleSdFirmwareUpdateCardUp(
+    void
+    )
+    {
+    static const char * const sUpdate[] = { "update.bin", "fallback.bin" };
+
+    for (auto s : sUpdate)
+        {
+        if (! gSD.exists(s))
+            {
+            if (gLog.isEnabled(gLog.kTrace))
+                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, sUpdate);
+            continue;
+            }
+
+        auto result = this->updateFromSd(
+                            s,
+                            s[0] == 'u' ? cDownload::DownloadRq_t::GetUpdate
+                                        : cDownload::DownloadRq_t::GetFallback
+                            );
+        if (gLog.isEnabled(gLog.kTrace))
+            gLog.printf(gLog.kAlways, "%s: applied update from %s: %s\n", FUNCTION, sUpdate, result ? "true": "false");
+        return result;
+        }
+
+    return true;
+    }
+
+bool
+cMeasurementLoop::updateFromSd(
+    const char *sUpdate,
+    cDownload::DownloadRq_t rq
+    )
+    {
+    // launch a programming cycle. We'll stall the measurement FSM here while
+    // doing the operation, but poll the other FSMs.
+    struct context_t
+            {
+            cMeasurementLoop *pThis;
+            bool fWorking;
+            File firmwareFile;
+            cDownload::Status_t status;
+            cDownload::Request_t request;
+            };
+    context_t context { this, true };
+
+    // try to open the file
+    context.firmwareFile = gSD.open(sUpdate, FILE_READ);
+
+    if (! context.firmwareFile)
+        {
+        // hmm. it exists but we could not open it.
+        if (gLog.isEnabled(gLog.kError))
+            gLog.printf(gLog.kAlways, "%s: exists but can't open: %s\n", FUNCTION, sUpdate);
+        return false;
+        }
+
+    auto & request = context.request;
+
+    request.Completion.init(
+        [](void *pUserData, cDownload::Status_t status) -> void
+            {
+            context_t * const pCtx = (context_t *)pUserData;
+
+            pCtx->status = status;
+            pCtx->fWorking = false;
+            },
+        (void *)&context
+        );
+
+    request.QueryAvailableData.init(
+        [](void *pUserData) -> int
+            {
+            return cDownload::kTransferChunkBytes;
+            },
+        nullptr
+        );
+    
+    request.PromptForData.init(nullptr, nullptr);
+
+    request.ReadBytes.init(
+        [](void *pUserData, std::uint8_t *pBuffer, size_t nBuffer) -> size_t
+            {
+            context_t * const pCtx = (context_t *)pUserData;
+
+            auto n = pCtx->firmwareFile.readBytes(pBuffer, nBuffer);
+            if (n < nBuffer)
+                memset(pBuffer + n, 0, nBuffer - n);
+
+            return n;
+            },
+        (void *)&context
+        );
+
+    request.rq = rq;
+
+    if (! gDownload.evStart(request))
+        {
+        context.firmwareFile.close();
+        gSD.remove(sUpdate);
+        return false;
+        }
+
+    // wait for transfer to complete
+    while (context.fWorking)
+        gCatena.poll();
+
+    // close and remove the file
+    context.firmwareFile.close();
+    gSD.remove(sUpdate);
+
+    return true;
+    }
+
+#undef FUNCTION

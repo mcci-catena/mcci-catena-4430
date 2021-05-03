@@ -21,6 +21,7 @@ Author:
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_BME280.h>
+#include <Catena_Download.h>
 #include <Catena_FSM.h>
 #include <Catena_Led.h>
 #include <Catena_Log.h>
@@ -369,6 +370,9 @@ private:
     bool initSdCard();
     bool checkSdCard();
     bool writeSdCard(TxBuffer_t &b, Measurement const &mData);
+    bool handleSdFirmwareUpdate();
+    bool handleSdFirmwareUpdateCardUp();
+    bool updateFromSd(const char *sFile, McciCatena::cDownload::DownloadRq_t rq);
     void sdPowerUp(bool fOn);
     void sdPrep();
     void sdFinish();

@@ -16,8 +16,7 @@ Author:
 #include <Arduino.h>
 #include <Wire.h>
 #include <Catena.h>
-#include <Catena_Mx25v8035f.h>
-#include <SPI.h>
+#include "Catena4430_Sensor.h"
 #include <arduino_lmic.h>
 #include <Catena_Timer.h>
 #include <Catena4430.h>
@@ -33,11 +32,14 @@ using namespace McciCatena4430;
 using namespace McciCatena;
 
 static_assert(
-    CATENA_ARDUINO_PLATFORM_VERSION >= CATENA_ARDUINO_PLATFORM_VERSION_CALC(0, 17, 0, 40),
-    "This sketch requires Catena-Arduino-Platform v0.17.0.40 or later"
+    CATENA_ARDUINO_PLATFORM_VERSION_COMPARE_GE(
+        CATENA_ARDUINO_PLATFORM_VERSION, 
+        CATENA_ARDUINO_PLATFORM_VERSION_CALC(0, 21, 0, 1)
+        ),
+    "This sketch requires Catena-Arduino-Platform v0.21.0-1 or later"
     );
 
-constexpr std::uint32_t kAppVersion = makeVersion(0,4,0,0);
+constexpr std::uint32_t kAppVersion = makeVersion(0,4,1,1);
 constexpr std::uint32_t kDoubleResetWaitMs = 500;
 constexpr std::uint32_t kSetDoubleResetMagic = 0xCA44301;
 constexpr std::uint32_t kClearDoubleResetMagic = 0xCA44300;
@@ -60,16 +62,23 @@ cTimer ledTimer;
 Catena::LoRaWAN gLoRaWAN;
 StatusLed gLed (Catena::PIN_STATUS_LED);
 
-SPIClass gSPI2(
-    Catena::PIN_SPI2_MOSI,
-    Catena::PIN_SPI2_MISO,
-    Catena::PIN_SPI2_SCK
-    );
-
 cMeasurementLoop gMeasurementLoop;
 
-//   The flash
+/* instantiate the bootloader API */
+cBootloaderApi gBootloaderApi;
+
+/* instantiate SPI */
+SPIClass gSPI2(
+		Catena::PIN_SPI2_MOSI,
+		Catena::PIN_SPI2_MISO,
+		Catena::PIN_SPI2_SCK
+		);
+
+/* instantiate the flash */
 Catena_Mx25v8035f gFlash;
+
+/* instantiate the downloader */
+cDownload gDownload;
 
 unsigned ledCount;
 bool fAnalogPin1;
@@ -116,6 +125,7 @@ void setup()
     setup_printSignOn();
 
     setup_flash();
+    setup_download();
     setup_measurement();
     setup_gpio();
     setup_rtc();
@@ -272,6 +282,7 @@ void setup_rtc()
 
 void setup_flash(void)
     {
+    gSPI2.begin();
     if (gFlash.begin(&gSPI2, Catena::PIN_SPI2_FLASH_SS))
         {
         gMeasurementLoop.registerSecondSpi(&gSPI2);
@@ -284,6 +295,11 @@ void setup_flash(void)
         gSPI2.end();
         gCatena.SafePrintf("No FLASH found: check hardware\n");
         }
+    }
+
+void setup_download()
+    {
+    gDownload.begin(gFlash, gBootloaderApi);
     }
 
 void setup_radio()
