@@ -37,7 +37,7 @@ static_assert(
     "This sketch requires Catena-Arduino-Platform v0.17.0.40 or later"
     );
 
-constexpr std::uint32_t kAppVersion = makeVersion(0,3,4,3);
+constexpr std::uint32_t kAppVersion = makeVersion(0,4,0,0);
 constexpr std::uint32_t kDoubleResetWaitMs = 500;
 constexpr std::uint32_t kSetDoubleResetMagic = 0xCA44301;
 constexpr std::uint32_t kClearDoubleResetMagic = 0xCA44300;

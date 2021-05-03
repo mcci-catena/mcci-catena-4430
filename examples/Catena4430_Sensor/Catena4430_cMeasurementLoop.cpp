@@ -79,7 +79,7 @@ void cMeasurementLoop::begin()
             .setSwGainCode(7)
             .setHwGainCode(4)
             .setPostShift(1)
-            .set24bit(false);
+            .set24bit(true);
 
         this->m_si1133.configure(0, measConfig, 0);
         }
