@@ -252,11 +252,17 @@ cMeasurementLoop::fsmDispatch(
             }
 
         if (this->writeSdCard(this->m_FileTxBuffer, this->m_FileData))
-            newState = State::stSleeping;
+            newState = State::stTryToUpdate;
         else if (gLoRaWAN.IsProvisioned())
-            newState = State::stSleeping;
+            newState = State::stTryToUpdate;
         else
             newState = State::stAwaitCard;
+        break;
+
+    // try to update firmware
+    case State::stTryToUpdate:
+        this->handleSdFirmwareUpdate();
+        newState = State::stSleeping;
         break;
 
     // no SD card....
@@ -807,7 +813,7 @@ void cMeasurementLoop::deepSleepRecovery(void)
     Serial.begin();
     Wire.begin();
     SPI.begin();
-    // if (this->m_pSPI2)
+    //if (this->m_pSPI2)
     //    this->m_pSPI2->begin();
     }
 

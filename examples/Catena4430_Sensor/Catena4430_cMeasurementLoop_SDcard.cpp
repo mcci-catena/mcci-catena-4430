@@ -357,6 +357,9 @@ cMeasurementLoop::handleSdFirmwareUpdate(
     void
     )
     {
+    if (this->m_pSPI2 == nullptr)
+        gLog.printf(gLog.kTrace, "SPI2 not registered, can't program flash\n");
+
     bool fResult = this->checkSdCard();
     if (fResult)
         {
@@ -382,7 +385,7 @@ cMeasurementLoop::handleSdFirmwareUpdateCardUp(
         if (! gSD.exists(s))
             {
             if (gLog.isEnabled(gLog.kTrace))
-                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, sUpdate);
+                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, s);
             continue;
             }
 
@@ -392,7 +395,7 @@ cMeasurementLoop::handleSdFirmwareUpdateCardUp(
                                         : cDownload::DownloadRq_t::GetFallback
                             );
         if (gLog.isEnabled(gLog.kTrace))
-            gLog.printf(gLog.kAlways, "%s: applied update from %s: %s\n", FUNCTION, sUpdate, result ? "true": "false");
+            gLog.printf(gLog.kAlways, "%s: applied update from %s: %s\n", FUNCTION, s, result ? "true": "false");
         return result;
         }
 
@@ -416,6 +419,22 @@ cMeasurementLoop::updateFromSd(
             cDownload::Request_t request;
             };
     context_t context { this, true };
+
+    if (gLog.isEnabled(gLog.kTrace))
+        {
+        gLog.printf(gLog.kAlways, "Attempting to load firmware from %s\n", sUpdate);
+        }
+
+    if (this->m_pSPI2)
+        {
+        this->m_pSPI2->begin();
+        gFlash.begin(this->m_pSPI2, Catena::PIN_SPI2_FLASH_SS);
+        }
+    else
+        {
+        gLog.printf(gLog.kError, "SPI2 pointer is null, give up\n");
+        return false;
+        }
 
     // try to open the file
     context.firmwareFile = gSD.open(sUpdate, FILE_READ);
@@ -456,9 +475,14 @@ cMeasurementLoop::updateFromSd(
             {
             context_t * const pCtx = (context_t *)pUserData;
 
+            gLog.printf(gLog.kInfo, ".");
+
             auto n = pCtx->firmwareFile.readBytes(pBuffer, nBuffer);
             if (n < nBuffer)
-                memset(pBuffer + n, 0, nBuffer - n);
+                {
+                memset(pBuffer + n, 0xFF, nBuffer - n);
+                gLog.printf(gLog.kInfo, "\n");
+                }
 
             return n;
             },
@@ -477,6 +501,11 @@ cMeasurementLoop::updateFromSd(
     // wait for transfer to complete
     while (context.fWorking)
         gCatena.poll();
+
+    if (context.status != cDownload::Status_t::kSuccessful)
+        {
+        gLog.printf(gLog.kError, "download failed, status %u\n", std::uint32_t(context.status));
+        }
 
     // close and remove the file
     context.firmwareFile.close();

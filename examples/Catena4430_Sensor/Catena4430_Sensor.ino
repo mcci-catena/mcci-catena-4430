@@ -34,12 +34,12 @@ using namespace McciCatena;
 static_assert(
     CATENA_ARDUINO_PLATFORM_VERSION_COMPARE_GE(
         CATENA_ARDUINO_PLATFORM_VERSION, 
-        CATENA_ARDUINO_PLATFORM_VERSION_CALC(0, 21, 0, 1)
+        CATENA_ARDUINO_PLATFORM_VERSION_CALC(0, 21, 0, 5)
         ),
-    "This sketch requires Catena-Arduino-Platform v0.21.0-1 or later"
+    "This sketch requires Catena-Arduino-Platform v0.21.0-5 or later"
     );
 
-constexpr std::uint32_t kAppVersion = makeVersion(0,4,1,1);
+constexpr std::uint32_t kAppVersion = makeVersion(0,4,1,10);
 constexpr std::uint32_t kDoubleResetWaitMs = 500;
 constexpr std::uint32_t kSetDoubleResetMagic = 0xCA44301;
 constexpr std::uint32_t kClearDoubleResetMagic = 0xCA44300;

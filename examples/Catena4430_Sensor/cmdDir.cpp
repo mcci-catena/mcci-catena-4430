@@ -84,6 +84,7 @@ cCommandStream::CommandStatus cmdDir(
     )
     {
     const char *sFile;
+    cCommandStream::CommandStatus result;
 
     if (argc > 2)
         return cCommandStream::CommandStatus::kInvalidParameter;
@@ -93,16 +94,28 @@ cCommandStream::CommandStatus cmdDir(
     else
         sFile = argv[1];
 
+    bool fHaveCard = gMeasurementLoop.checkSdCard();
+    if (! fHaveCard)
+        {
+        pThis->printf("%s: no SD card found\n", argv[0]);
+        return cCommandStream::CommandStatus::kIoError;
+        }
+
     auto dir = gSD.open(sFile);
     if (! dir)
         {
         pThis->printf("%s: not found: %s\n", argv[0], sFile);
-        return cCommandStream::CommandStatus::kReadError;
+        result = cCommandStream::CommandStatus::kReadError;
+        }
+    else
+        {
+        printDirectory(pThis, dir, 0, argv[0][0] == 't');
+        dir.close();
+        result = cCommandStream::CommandStatus::kSuccess;
         }
 
-    printDirectory(pThis, dir, 0, argv[0][0] == 't');
-    dir.close();
-    return cCommandStream::CommandStatus::kSuccess;
+    gMeasurementLoop.sdFinish();
+    return result;    
     }
 
 static void
@@ -119,7 +132,7 @@ printDirectory(
         if (! entry)
             return;
 
-        pThis->printf("%.*s", 4 * level, "");
+        pThis->printf("%*s", 4 * level, "");
         pThis->printf("%s", entry.name());
         if (entry.isDirectory())
             {
@@ -129,7 +142,7 @@ printDirectory(
             }
         else
             {
-            pThis->printf("%.*u\n", 16 - strlen(entry.name()) + 8, entry.size());
+            pThis->printf("%*s%10u\n", 16 - strlen(entry.name()), "", entry.size());
             }
         entry.close();
         }

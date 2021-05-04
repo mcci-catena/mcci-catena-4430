@@ -261,6 +261,7 @@ public:
         stMeasure,      // take measurents
         stTransmit,     // transmit data
         stWriteFile,    // write file data
+        stTryToUpdate,  // try to update firmware
         stAwaitCard,    // wait for a card to show up.
 
         stFinal,        // this name must be present, it's the terminal state.
@@ -278,6 +279,7 @@ public:
         case State::stMeasure:  return "stMeasure";
         case State::stTransmit: return "stTransmit";
         case State::stWriteFile: return "stWriteFile";
+        case State::stTryToUpdate: return "stTryToUpdate";
         case State::stAwaitCard: return "stAwaitCard";
         case State::stFinal:    return "stFinal";
         default:                return "<<unknown>>";
@@ -337,6 +339,11 @@ public:
         this->m_pSPI2 = pSpi;
         }
 
+    /// bring up the SD card, if possible.
+    bool checkSdCard();
+    /// tear down the SD card.
+    void sdFinish();
+
 private:
     // sleep handling
     void sleep();
@@ -368,14 +375,13 @@ private:
 
     // SD card handling
     bool initSdCard();
-    bool checkSdCard();
+
     bool writeSdCard(TxBuffer_t &b, Measurement const &mData);
     bool handleSdFirmwareUpdate();
     bool handleSdFirmwareUpdateCardUp();
     bool updateFromSd(const char *sFile, McciCatena::cDownload::DownloadRq_t rq);
     void sdPowerUp(bool fOn);
     void sdPrep();
-    void sdFinish();
 
     // pir handling
     void resetPirAccumulation(void);
