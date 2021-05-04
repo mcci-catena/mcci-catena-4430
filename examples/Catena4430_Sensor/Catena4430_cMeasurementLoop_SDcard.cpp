@@ -342,8 +342,7 @@ Description:
     up on the card.
 
 Returns:
-    True if an SD card was seen and all seemed in order (update
-    pending or not). False if some kind of I/O error stopped progress.
+    True if an update was done and the system should be rebooted.
 
 Notes:
     
@@ -358,7 +357,7 @@ cMeasurementLoop::handleSdFirmwareUpdate(
     )
     {
     if (this->m_pSPI2 == nullptr)
-        gLog.printf(gLog.kTrace, "SPI2 not registered, can't program flash\n");
+        gLog.printf(gLog.kBug, "SPI2 not registered, can't program flash\n");
 
     bool fResult = this->checkSdCard();
     if (fResult)
@@ -395,11 +394,11 @@ cMeasurementLoop::handleSdFirmwareUpdateCardUp(
                                         : cDownload::DownloadRq_t::GetFallback
                             );
         if (gLog.isEnabled(gLog.kTrace))
-            gLog.printf(gLog.kAlways, "%s: applied update from %s: %s\n", FUNCTION, s, result ? "true": "false");
+            gLog.printf(gLog.kTrace, "%s: applied update from %s: %s\n", FUNCTION, s, result ? "true": "false");
         return result;
         }
 
-    return true;
+    return false;
     }
 
 bool
@@ -420,10 +419,7 @@ cMeasurementLoop::updateFromSd(
             };
     context_t context { this, true };
 
-    if (gLog.isEnabled(gLog.kTrace))
-        {
-        gLog.printf(gLog.kAlways, "Attempting to load firmware from %s\n", sUpdate);
-        }
+    gLog.printf(gLog.kInfo, "Attempting to load firmware from %s\n", sUpdate);
 
     if (this->m_pSPI2)
         {
@@ -442,8 +438,7 @@ cMeasurementLoop::updateFromSd(
     if (! context.firmwareFile)
         {
         // hmm. it exists but we could not open it.
-        if (gLog.isEnabled(gLog.kError))
-            gLog.printf(gLog.kAlways, "%s: exists but can't open: %s\n", FUNCTION, sUpdate);
+        gLog.printf(gLog.kError, "%s: exists but can't open: %s\n", FUNCTION, sUpdate);
         return false;
         }
 
@@ -476,6 +471,7 @@ cMeasurementLoop::updateFromSd(
             context_t * const pCtx = (context_t *)pUserData;
 
             gLog.printf(gLog.kInfo, ".");
+            gCatena.poll();
 
             auto n = pCtx->firmwareFile.readBytes(pBuffer, nBuffer);
             if (n < nBuffer)
@@ -484,7 +480,7 @@ cMeasurementLoop::updateFromSd(
                 gLog.printf(gLog.kInfo, "\n");
                 }
 
-            return n;
+            return nBuffer;
             },
         (void *)&context
         );
@@ -502,16 +498,20 @@ cMeasurementLoop::updateFromSd(
     while (context.fWorking)
         gCatena.poll();
 
-    if (context.status != cDownload::Status_t::kSuccessful)
-        {
-        gLog.printf(gLog.kError, "download failed, status %u\n", std::uint32_t(context.status));
-        }
-
     // close and remove the file
     context.firmwareFile.close();
     gSD.remove(sUpdate);
 
-    return true;
+    if (context.status != cDownload::Status_t::kSuccessful)
+        {
+        gLog.printf(gLog.kError, "download failed, status %u\n", std::uint32_t(context.status));
+        return false;
+        }
+    else
+        {
+        gLog.printf(gLog.kInfo, "download succeded.\n");
+        return true;
+        }
     }
 
 #undef FUNCTION

@@ -263,6 +263,7 @@ public:
         stWriteFile,    // write file data
         stTryToUpdate,  // try to update firmware
         stAwaitCard,    // wait for a card to show up.
+        stRebootForUpdate, // reboot system to complete firmware update
 
         stFinal,        // this name must be present, it's the terminal state.
         };
@@ -281,6 +282,7 @@ public:
         case State::stWriteFile: return "stWriteFile";
         case State::stTryToUpdate: return "stTryToUpdate";
         case State::stAwaitCard: return "stAwaitCard";
+        case State::stRebootForUpdate: return "stRebootForUpdate";
         case State::stFinal:    return "stFinal";
         default:                return "<<unknown>>";
             }

@@ -261,8 +261,10 @@ cMeasurementLoop::fsmDispatch(
 
     // try to update firmware
     case State::stTryToUpdate:
-        this->handleSdFirmwareUpdate();
-        newState = State::stSleeping;
+        if (this->handleSdFirmwareUpdate())
+            newState = State::stRebootForUpdate;
+        else
+            newState = State::stSleeping;
         break;
 
     // no SD card....
@@ -273,6 +275,19 @@ cMeasurementLoop::fsmDispatch(
             }
 
         newState = State::stSleeping;
+        break;
+
+    // reboot for update
+    case State::stRebootForUpdate:
+        if (fEntry)
+            {
+            gLog.printf(gLog.kInfo, "Rebooting to apply firmware\n");
+            this->setTimer(1 * 1000);
+            }
+        if (this->timedOut())
+            {
+            NVIC_SystemReset();
+            }
         break;
 
     case State::stFinal:
