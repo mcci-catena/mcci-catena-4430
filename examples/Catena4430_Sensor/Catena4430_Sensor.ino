@@ -39,7 +39,7 @@ static_assert(
     "This sketch requires Catena-Arduino-Platform v0.21.0-5 or later"
     );
 
-constexpr std::uint32_t kAppVersion = makeVersion(0,4,1,20);
+constexpr std::uint32_t kAppVersion = makeVersion(0,5,0,0);
 constexpr std::uint32_t kDoubleResetWaitMs = 500;
 constexpr std::uint32_t kSetDoubleResetMagic = 0xCA44301;
 constexpr std::uint32_t kClearDoubleResetMagic = 0xCA44300;
@@ -221,7 +221,7 @@ void setup_printSignOn()
 
     gCatena.SafePrintf("\n%s%s\n", dashes, dashes);
 
-    gCatena.SafePrintf("This is %s v%d.%d.%d.%d.\n",
+    gCatena.SafePrintf("This is %s v%d.%d.%d-%d.\n",
         filebasename(__FILE__),
         getMajor(kAppVersion), getMinor(kAppVersion), getPatch(kAppVersion), getLocal(kAppVersion)
         );
@@ -240,7 +240,6 @@ void setup_printSignOn()
         ((unsigned)gCatena.GetSystemClockRate() / 1000 % 1000)
         );
     gCatena.SafePrintf("Enter 'help' for a list of commands.\n");
-    gCatena.SafePrintf("(remember to select 'Line Ending: Newline' at the bottom of the monitor window.)\n");
 
     gCatena.SafePrintf("%s%s\n" "\n", dashes, dashes);
     }
