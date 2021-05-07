@@ -257,9 +257,8 @@ function Decoder(bytes, port) {
     // i is used as the index into the message. Start with the time.
     Parse.i = 1;
 
-    // fetch time, convert from GPS to ISO time assuming 17 leap seconds,
-    // and then convert to JSON format.
-    decoded.time = new Date((DecodeU32(Parse) + 315964800 - 17) * 1000).toJSON();
+    // fetch time; convert to database time (which is UTC-like ignoring leap seconds)
+    decoded.time = new Date((DecodeU32(Parse) + /* gps epoch to posix */ 315964800 - /* leap seconds */ 17) * 1000);
 
     // fetch the bitmap.
     var flags = bytes[Parse.i++];

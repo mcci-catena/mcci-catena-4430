@@ -21,6 +21,7 @@ Author:
 #include <Catena_CommandStream.h>
 
 McciCatena::cCommandStream::CommandFn cmdDate;
-McciCatena::cCommandStream::CommandFn cmdDebugMask;
+McciCatena::cCommandStream::CommandFn cmdLog;
+McciCatena::cCommandStream::CommandFn cmdDir;
 
 #endif /* _Catena4430_cmd_h_ */

@@ -19,12 +19,16 @@ Author:
 #pragma once
 
 #include <Catena.h>
-#include <Catena4430_c4430Gpios.h>
+#include <Catena_BootloaderApi.h>
+#include <Catena_Download.h>
+#include <Catena_Led.h>
+#include <Catena_Mx25v8035f.h>
 #include <Catena_Timer.h>
+#include <Catena4430_c4430Gpios.h>
 #include <Catena4430_cPCA9570.h>
 #include <Catena4430_cClockDriver_PCF8523.h>
+#include <SD.h>
 #include <SPI.h>
-#include <Catena_Led.h>
 #include "Catena4430_cMeasurementLoop.h"
 
 // the global clock object
@@ -42,5 +46,13 @@ extern  McciCatena4430::cMeasurementLoop        gMeasurementLoop;
 //   The flash
 extern  McciCatena::Catena_Mx25v8035f           gFlash;
 
+// the bootloader
+extern  McciCatena::cBootloaderApi              gBootloaderApi;
+
+// the downloaer
+extern  McciCatena::cDownload                   gDownload;
+
+// the SD card
+extern  SDClass                                 gSD;
 
 #endif // !defined(_Catena4430_Sensor_h_)
