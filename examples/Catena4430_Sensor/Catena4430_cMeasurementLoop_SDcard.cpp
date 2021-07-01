@@ -19,6 +19,10 @@ Author:
 
 #include <Catena_Download.h>
 
+#include <Catena_Fram.h>
+
+#include <Arduino_LoRaWAN_lmic.h>
+
 #include <SD.h>
 #include <mcciadk_baselib.h>
 
@@ -363,6 +367,20 @@ cMeasurementLoop::handleSdFirmwareUpdate(
     if (fResult)
         {
         fResult = this->handleSdFirmwareUpdateCardUp();
+
+#if ARDUINO_LMIC_CFG_NETWORK_TTN
+        bool fMigrate = this->handleSdTTNv3MigrateCardUp();
+
+        if (fMigrate)
+            {
+            bool fFramUpdate = this->updateFramAppEui();
+
+            if (fFramUpdate)
+                this->reJoinNetwork();
+            else
+                gLog.printf(gLog.kBug, "cFramStorage::kAppEUI: not updated\n");
+            }
+#endif
         }
     this->sdFinish();
     return fResult;
@@ -569,6 +587,53 @@ cMeasurementLoop::updateFromSd(
         gLog.printf(gLog.kInfo, "download succeded.\n");
         return true;
         }
+    }
+
+bool
+cMeasurementLoop::handleSdTTNv3MigrateCardUp(
+    void
+    )
+    {
+    static const char * const sMigrate[] = { "MIGRATE.V3" };
+    bool result;
+
+    for (auto s : sMigrate)
+        {
+        if (! gSD.exists(s))
+            {
+            if (gLog.isEnabled(gLog.kTrace))
+                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, s);
+
+            result = false;
+            return result;
+            }
+        result = true;
+        return result;
+        }
+    }
+
+bool
+cMeasurementLoop::updateFramAppEui(
+    void
+    )
+    {
+    auto const pFram = gCatena.getFram();
+    uint8_t AppEUI[] = { 1, 0, 0, 0, 0, 0, 0, 0 };
+
+    if (pFram == nullptr)
+        return false;
+
+    pFram->saveField(cFramStorage::kAppEUI, AppEUI);
+    return true;
+    }
+
+void
+cMeasurementLoop::reJoinNetwork(
+    void
+    )
+    {
+    LMIC_unjoin();
+    LMIC_startJoining();
     }
 
 #undef FUNCTION
