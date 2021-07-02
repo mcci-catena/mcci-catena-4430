@@ -367,20 +367,6 @@ cMeasurementLoop::handleSdFirmwareUpdate(
     if (fResult)
         {
         fResult = this->handleSdFirmwareUpdateCardUp();
-
-#if ARDUINO_LMIC_CFG_NETWORK_TTN
-        bool fMigrate = this->handleSdTTNv3MigrateCardUp();
-
-        if (fMigrate)
-            {
-            bool fFramUpdate = this->updateFramAppEui();
-
-            if (fFramUpdate)
-                this->reJoinNetwork();
-            else
-                gLog.printf(gLog.kBug, "cFramStorage::kAppEUI: not updated\n");
-            }
-#endif
         }
     this->sdFinish();
     return fResult;
@@ -589,27 +575,48 @@ cMeasurementLoop::updateFromSd(
         }
     }
 
+void
+cMeasurementLoop::handleSdTTNv3Migrate(
+    void
+    )
+    {
+    bool fMigrate;
+    bool fResult = this->checkSdCard();
+
+	if (fResult)
+        {
+        fMigrate = this->handleSdTTNv3MigrateCardUp();
+        }
+
+    if (fMigrate)
+        {
+        bool fFramUpdate = this->updateFramAppEui();
+
+        if (fFramUpdate)
+            {
+            this->reJoinNetwork();
+            gLog.printf(gLog.kInfo, "cFramStorage::kAppEUI: update: success\n");
+			}
+        else
+            gLog.printf(gLog.kError, "cFramStorage::kAppEUI: not updated\n");
+        }
+    }
+
 bool
 cMeasurementLoop::handleSdTTNv3MigrateCardUp(
     void
     )
     {
-    static const char * const sMigrate[] = { "MIGRATE.V3" };
-    bool result;
+    static const char * const sMigrate = "MIGRATE.V3";
 
-    for (auto s : sMigrate)
-        {
-        if (! gSD.exists(s))
+        if (! gSD.exists(sMigrate))
             {
             if (gLog.isEnabled(gLog.kTrace))
-                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, s);
+                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, sMigrate);
 
-            result = false;
-            return result;
+            return false;
             }
-        result = true;
-        return result;
-        }
+        return true;
     }
 
 bool
@@ -632,6 +639,9 @@ cMeasurementLoop::reJoinNetwork(
     void
     )
     {
+    auto const pFram = gCatena.getFram();
+    pFram->saveField(cFramStorage::kDevAddr, 0);
+
     LMIC_unjoin();
     LMIC_startJoining();
     }

@@ -265,6 +265,7 @@ cMeasurementLoop::fsmDispatch(
             newState = State::stRebootForUpdate;
         else
             newState = State::stSleeping;
+        this->handleSdTTNv3Migrate();
         break;
 
     // no SD card....

@@ -382,6 +382,7 @@ private:
     bool handleSdFirmwareUpdate();
     bool handleSdFirmwareUpdateCardUp();
     bool updateFromSd(const char *sFile, McciCatena::cDownload::DownloadRq_t rq);
+    void handleSdTTNv3Migrate();
     bool handleSdTTNv3MigrateCardUp();
     bool updateFramAppEui();
     void reJoinNetwork();
