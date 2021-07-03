@@ -580,12 +580,13 @@ cMeasurementLoop::handleSdTTNv3Migrate(
     void
     )
     {
+    static const char * const sMigrate = "MIGRATE.V3";
     bool fMigrate;
     bool fResult = this->checkSdCard();
 
 	if (fResult)
         {
-        fMigrate = this->handleSdTTNv3MigrateCardUp();
+        fMigrate = this->handleSdTTNv3MigrateCardUp(sMigrate);
         }
 
     if (fMigrate)
@@ -595,6 +596,7 @@ cMeasurementLoop::handleSdTTNv3Migrate(
         if (fFramUpdate)
             {
             this->reJoinNetwork();
+            gSD.remove(sMigrate);
             gLog.printf(gLog.kInfo, "cFramStorage::kAppEUI: update: success\n");
 			}
         else
@@ -604,19 +606,17 @@ cMeasurementLoop::handleSdTTNv3Migrate(
 
 bool
 cMeasurementLoop::handleSdTTNv3MigrateCardUp(
-    void
+    const char *sMigrate
     )
     {
-    static const char * const sMigrate = "MIGRATE.V3";
+    if (! gSD.exists(sMigrate))
+        {
+        if (gLog.isEnabled(gLog.kTrace))
+            gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, sMigrate);
 
-        if (! gSD.exists(sMigrate))
-            {
-            if (gLog.isEnabled(gLog.kTrace))
-                gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, sMigrate);
-
-            return false;
-            }
-        return true;
+        return false;
+        }
+    return true;
     }
 
 bool
