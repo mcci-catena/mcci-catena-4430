@@ -37,6 +37,8 @@ using namespace McciCatena;
 
 SDClass gSD;
 
+constexpr char gkMigrateFileName[] = "MIGRATE.V3";
+
 /****************************************************************************\
 |
 |   Some utilities
@@ -580,13 +582,12 @@ cMeasurementLoop::handleSdTTNv3Migrate(
     void
     )
     {
-    static const char * const sMigrate = "MIGRATE.V3";
-    bool fMigrate;
+    bool fMigrate = false;
     bool fResult = this->checkSdCard();
 
 	if (fResult)
         {
-        fMigrate = this->handleSdTTNv3MigrateCardUp(sMigrate);
+        fMigrate = this->handleSdTTNv3MigrateCardUp();
         }
 
     if (fMigrate)
@@ -595,10 +596,10 @@ cMeasurementLoop::handleSdTTNv3Migrate(
 
         if (fFramUpdate)
             {
-            this->reJoinNetwork();
-            gSD.remove(sMigrate);
+            this->rejoinNetwork();
+            gSD.remove(gkMigrateFileName);
             gLog.printf(gLog.kInfo, "cFramStorage::kAppEUI: update: success\n");
-			}
+            }
         else
             gLog.printf(gLog.kError, "cFramStorage::kAppEUI: not updated\n");
         }
@@ -606,14 +607,11 @@ cMeasurementLoop::handleSdTTNv3Migrate(
 
 bool
 cMeasurementLoop::handleSdTTNv3MigrateCardUp(
-    const char *sMigrate
+    void
     )
     {
-    if (! gSD.exists(sMigrate))
+    if (! gSD.exists(gkMigrateFileName))
         {
-        if (gLog.isEnabled(gLog.kTrace))
-            gLog.printf(gLog.kAlways, "%s: not found: %s\n", FUNCTION, sMigrate);
-
         return false;
         }
     return true;
@@ -625,7 +623,7 @@ cMeasurementLoop::updateFramAppEui(
     )
     {
     auto const pFram = gCatena.getFram();
-    uint8_t AppEUI[] = { 1, 0, 0, 0, 0, 0, 0, 0 };
+    static const uint8_t AppEUI[] = { 1, 0, 0, 0, 0, 0, 0, 0 };
 
     if (pFram == nullptr)
         return false;
@@ -635,7 +633,7 @@ cMeasurementLoop::updateFramAppEui(
     }
 
 void
-cMeasurementLoop::reJoinNetwork(
+cMeasurementLoop::rejoinNetwork(
     void
     )
     {

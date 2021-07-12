@@ -264,8 +264,13 @@ cMeasurementLoop::fsmDispatch(
         if (this->handleSdFirmwareUpdate())
             newState = State::stRebootForUpdate;
         else
-            newState = State::stSleeping;
+            newState = State::stTryToMigrate;
+        break;
+
+    // try to migrate to TTN V3
+    case State::stTryToMigrate:
         this->handleSdTTNv3Migrate();
+        newState = State::stSleeping;
         break;
 
     // no SD card....
