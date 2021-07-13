@@ -587,12 +587,25 @@ cMeasurementLoop::handleSdTTNv3Migrate(
 
 	if (fResult)
         {
-        fMigrate = this->handleSdTTNv3MigrateCardUp();
+        if (! gSD.exists(gkMigrateFileName))
+            fMigrate = false;
+        else
+            fMigrate = true;
         }
 
     if (fMigrate)
         {
-        bool fFramUpdate = this->updateFramAppEui();
+        bool fFramUpdate = false;
+        auto const pFram = gCatena.getFram();
+        static const uint8_t AppEUI[] = { 1, 0, 0, 0, 0, 0, 0, 0 };
+
+        if (pFram == nullptr)
+            fFramUpdate = false;
+        else
+            {
+            pFram->saveField(cFramStorage::kAppEUI, AppEUI);
+            fFramUpdate = true;
+            }
 
         if (fFramUpdate)
             {
@@ -603,33 +616,6 @@ cMeasurementLoop::handleSdTTNv3Migrate(
         else
             gLog.printf(gLog.kError, "cFramStorage::kAppEUI: not updated\n");
         }
-    }
-
-bool
-cMeasurementLoop::handleSdTTNv3MigrateCardUp(
-    void
-    )
-    {
-    if (! gSD.exists(gkMigrateFileName))
-        {
-        return false;
-        }
-    return true;
-    }
-
-bool
-cMeasurementLoop::updateFramAppEui(
-    void
-    )
-    {
-    auto const pFram = gCatena.getFram();
-    static const uint8_t AppEUI[] = { 1, 0, 0, 0, 0, 0, 0, 0 };
-
-    if (pFram == nullptr)
-        return false;
-
-    pFram->saveField(cFramStorage::kAppEUI, AppEUI);
-    return true;
     }
 
 void
