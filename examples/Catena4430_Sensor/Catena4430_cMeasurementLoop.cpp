@@ -269,7 +269,10 @@ cMeasurementLoop::fsmDispatch(
 
     // try to migrate to TTN V3
     case State::stTryToMigrate:
-        this->handleSdTTNv3Migrate();
+        if (fEntry)
+            {
+            this->handleSdTTNv3Migrate();
+            }
         newState = State::stSleeping;
         break;
 
