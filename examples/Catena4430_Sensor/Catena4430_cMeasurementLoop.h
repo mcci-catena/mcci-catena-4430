@@ -262,6 +262,7 @@ public:
         stTransmit,     // transmit data
         stWriteFile,    // write file data
         stTryToUpdate,  // try to update firmware
+        stTryToMigrate, // try to migrate device to TTN V3
         stAwaitCard,    // wait for a card to show up.
         stRebootForUpdate, // reboot system to complete firmware update
 
@@ -281,6 +282,7 @@ public:
         case State::stTransmit: return "stTransmit";
         case State::stWriteFile: return "stWriteFile";
         case State::stTryToUpdate: return "stTryToUpdate";
+        case State::stTryToMigrate: return "stTryToMigrate";
         case State::stAwaitCard: return "stAwaitCard";
         case State::stRebootForUpdate: return "stRebootForUpdate";
         case State::stFinal:    return "stFinal";
@@ -382,6 +384,8 @@ private:
     bool handleSdFirmwareUpdate();
     bool handleSdFirmwareUpdateCardUp();
     bool updateFromSd(const char *sFile, McciCatena::cDownload::DownloadRq_t rq);
+    void handleSdTTNv3Migrate();
+    void rejoinNetwork();
     void sdPowerUp(bool fOn);
     void sdPrep();
 
