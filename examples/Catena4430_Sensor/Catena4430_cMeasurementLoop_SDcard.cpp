@@ -626,8 +626,7 @@ cMeasurementLoop::rejoinNetwork(
     auto const pFram = gCatena.getFram();
     pFram->saveField(cFramStorage::kDevAddr, 0);
 
-    LMIC_unjoin();
-    LMIC_startJoining();
+    LMIC_unjoinAndRejoin();
     }
 
 #undef FUNCTION
