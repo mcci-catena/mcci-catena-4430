@@ -239,7 +239,7 @@ public:
             )
         : m_pirSampleSec(2)                 // PIR sample timer
         , m_txCycleSec_Permanent(6 * 60)    // default uplink interval
-        , m_txCycleSec(30)                  // initial uplink interval
+        , m_txCycleSec(60)                  // initial uplink interval
         , m_txCycleCount(10)                // initial count of fast uplinks
         , m_DebugFlags(DebugFlags(kError | kTrace))
         , m_ActivityTimerSec(60)            // the activity time sample interval
