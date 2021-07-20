@@ -92,6 +92,7 @@ void cMeasurementLoop::begin()
     // start (or restart) the FSM.
     if (! this->m_running)
         {
+        this->m_fFwUpdate = false;
         this->m_exit = false;
         this->m_fsm.init(*this, &cMeasurementLoop::fsmDispatch);
         }
@@ -265,6 +266,7 @@ cMeasurementLoop::fsmDispatch(
             newState = State::stRebootForUpdate;
         else
             newState = State::stTryToMigrate;
+        this->m_fFwUpdate = false;
         break;
 
     // try to migrate to TTN V3
@@ -542,7 +544,7 @@ void cMeasurementLoop::poll()
     this->m_data.Vbus = gCatena.ReadVbus();
     setVbus(this->m_data.Vbus);
 
-    if (!(this->m_fUsbPower) && !(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
+    if (!(this->m_fUsbPower) && !(this->m_fFwUpdate) && !(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
         lptimSleep(timeOut);
     }
 

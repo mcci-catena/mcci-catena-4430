@@ -425,6 +425,8 @@ cMeasurementLoop::updateFromSd(
             };
     context_t context { this, true };
 
+    this->m_fFwUpdate = true;
+
     gLog.printf(gLog.kInfo, "Attempting to load firmware from %s\n", sUpdate);
 
     // power management: typically the SPI2 is powered down by a sleep,

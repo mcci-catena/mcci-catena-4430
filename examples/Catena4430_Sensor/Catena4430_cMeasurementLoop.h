@@ -452,6 +452,8 @@ private:
     bool                            m_fPrintedSleeping : 1;
     // set true when SPI2 is active
     bool                            m_fSpi2Active: 1;
+    // set true when we've BIN file in SD card to update
+    bool                            m_fFwUpdate : 1;
 
     // PIR sample control
     cPIRdigital                     m_pir;
