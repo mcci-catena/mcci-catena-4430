@@ -618,6 +618,7 @@ cMeasurementLoop::handleSdTTNv3Migrate(
         else
             gLog.printf(gLog.kError, "cFramStorage::kAppEUI: not updated\n");
         }
+    this->sdFinish();
     }
 
 void
