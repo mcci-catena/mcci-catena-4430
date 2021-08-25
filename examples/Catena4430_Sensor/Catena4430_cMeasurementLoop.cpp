@@ -73,6 +73,7 @@ void cMeasurementLoop::begin()
     if (this->m_si1133.begin())
         {
         this->m_fSi1133 = true;
+        this->m_fLowLight = true;
 
         auto const measConfig =	Catena_Si1133::ChannelConfiguration_t()
             .setAdcMux(Catena_Si1133::InputLed_t::LargeWhite)
@@ -161,7 +162,7 @@ cMeasurementLoop::fsmDispatch(
             // reset the counters.
             this->resetPirAccumulation();
 
-            if (!(this->fDisableLED))
+            if (!(this->fDisableLED && this->m_fLowLight)))
                 {
                 // set the LEDs to flash accordingly.
                 gLed.Set(McciCatena::LedPattern::Sleeping);
@@ -401,6 +402,11 @@ void cMeasurementLoop::updateLightMeasurements()
 
     this->m_data.flags |= Flags::Light;
     this->m_data.light.White = (float) data[0];
+
+    if (data[0] <= 500)
+        m_fLowLight = true;
+    else
+        m_fLowLight = false;
     }
 
 void cMeasurementLoop::resetPirAccumulation()
@@ -439,7 +445,7 @@ void cMeasurementLoop::startTransmission(
     )
     {
     auto const savedLed = gLed.Set(McciCatena::LedPattern::Off);
-    if (!(this->fDisableLED))
+    if (!(this->fDisableLED && this->m_fLowLight))
         {
         gLed.Set(McciCatena::LedPattern::Sending);
         }
@@ -765,7 +771,7 @@ void cMeasurementLoop::doSleepAlert(bool fDeepSleep)
                             deepSleepDelay
                             );
 
-        if (!(this->fDisableLED))
+        if (!(this->fDisableLED && this->m_fLowLight))
             {
             // sleep and print
             gLed.Set(McciCatena::LedPattern::TwoShort);
