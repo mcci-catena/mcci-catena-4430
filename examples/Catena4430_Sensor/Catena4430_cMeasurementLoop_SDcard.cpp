@@ -19,6 +19,10 @@ Author:
 
 #include <Catena_Download.h>
 
+#include <Catena_Fram.h>
+
+#include <Arduino_LoRaWAN_lmic.h>
+
 #include <SD.h>
 #include <mcciadk_baselib.h>
 
@@ -32,6 +36,8 @@ using namespace McciCatena;
 \****************************************************************************/
 
 SDClass gSD;
+
+constexpr char gkMigrateFileName[] = "MIGRATE.V3";
 
 /****************************************************************************\
 |
@@ -419,6 +425,8 @@ cMeasurementLoop::updateFromSd(
             };
     context_t context { this, true };
 
+    this->m_fFwUpdate = true;
+
     gLog.printf(gLog.kInfo, "Attempting to load firmware from %s\n", sUpdate);
 
     // power management: typically the SPI2 is powered down by a sleep,
@@ -569,6 +577,59 @@ cMeasurementLoop::updateFromSd(
         gLog.printf(gLog.kInfo, "download succeded.\n");
         return true;
         }
+    }
+
+void
+cMeasurementLoop::handleSdTTNv3Migrate(
+    void
+    )
+    {
+    bool fMigrate = false;
+    bool fResult = this->checkSdCard();
+
+	if (fResult)
+        {
+        if (! gSD.exists(gkMigrateFileName))
+            fMigrate = false;
+        else
+            fMigrate = true;
+        }
+
+    if (fMigrate)
+        {
+        bool fFramUpdate = false;
+        auto const pFram = gCatena.getFram();
+        static const uint8_t AppEUI[] = { 1, 0, 0, 0, 0, 0, 0, 0 };
+
+        if (pFram == nullptr)
+            fFramUpdate = false;
+        else
+            {
+            pFram->saveField(cFramStorage::kAppEUI, AppEUI);
+            fFramUpdate = true;
+            }
+
+        if (fFramUpdate)
+            {
+            this->rejoinNetwork();
+            gSD.remove(gkMigrateFileName);
+            gLog.printf(gLog.kInfo, "cFramStorage::kAppEUI: update: success\n");
+            }
+        else
+            gLog.printf(gLog.kError, "cFramStorage::kAppEUI: not updated\n");
+        }
+    this->sdFinish();
+    }
+
+void
+cMeasurementLoop::rejoinNetwork(
+    void
+    )
+    {
+    auto const pFram = gCatena.getFram();
+    pFram->saveField(cFramStorage::kDevAddr, 0);
+
+    LMIC_unjoinAndRejoin();
     }
 
 #undef FUNCTION
