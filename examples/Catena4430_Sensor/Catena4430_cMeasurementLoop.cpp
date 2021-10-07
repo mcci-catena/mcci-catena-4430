@@ -162,7 +162,7 @@ cMeasurementLoop::fsmDispatch(
             // reset the counters.
             this->resetPirAccumulation();
 
-            if (!(this->fDisableLED && this->m_fLowLight)))
+            if (!(this->fDisableLED && this->m_fLowLight))
                 {
                 // set the LEDs to flash accordingly.
                 gLed.Set(McciCatena::LedPattern::Sleeping);
