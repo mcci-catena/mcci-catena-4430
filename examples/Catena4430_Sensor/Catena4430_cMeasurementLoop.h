@@ -441,6 +441,8 @@ private:
     bool                            m_fBme280 : 1;
     // set true if SI1133 is present
     bool                            m_fSi1133: 1;
+    // set true if SI1133 detects low light
+    bool                            m_fLowLight: 1;
 
     // set true while a transmit is pending.
     bool                            m_txpending : 1;

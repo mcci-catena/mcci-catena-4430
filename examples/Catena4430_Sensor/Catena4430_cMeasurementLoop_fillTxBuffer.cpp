@@ -43,7 +43,7 @@ cMeasurementLoop::fillTxBuffer(
     )
     {
     auto const savedLed = gLed.Set(McciCatena::LedPattern::Off);
-    if (!(this->fDisableLED))
+    if (!(this->fDisableLED && this->m_fLowLight))
         {
         gLed.Set(McciCatena::LedPattern::Measuring);
         }
@@ -138,6 +138,6 @@ cMeasurementLoop::fillTxBuffer(
             }
         }
 
-    if (!(this->fDisableLED))
+    if (!(this->fDisableLED && this->m_fLowLight))
         gLed.Set(savedLed);
     }
