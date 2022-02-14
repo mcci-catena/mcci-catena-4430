@@ -60,7 +60,7 @@ getLocal(std::uint32_t v)
     }
 
 // version of library, for use by clients in static_asserts
-static constexpr std::uint32_t kVersion = makeVersion(0,4,1,1);
+static constexpr std::uint32_t kVersion = makeVersion(0,5,2,0);
 
 } // namespace McciCatena4430
 

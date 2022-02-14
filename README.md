@@ -1,6 +1,8 @@
 # MCCI-Catena-4430 library
 
-This library provides Arduino support for the MCCI Catena&reg; 4430 Feather Wing.
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/mcci-catena-4430.svg)](https://github.com/mcci-catena/mcci-catena-4430/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/mcci-catena-4430/latest.svg)](https://github.com/mcci-catena/mcci-catena-4430/compare/v0.5.2...master)
+
+This library provides Arduino support for the MCCI Catena&reg; 4430 Animal Activity Sensor Feather Wing.
 
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-capture -->
@@ -27,11 +29,15 @@ This library provides Arduino support for the MCCI Catena&reg; 4430 Feather Wing
 
 ## Introduction
 
-The MCCI Catena 4430 Feather Wing is an accessory for Adafruit Feather-compatible CPU boards such as the Adafruit Feather M0 or the MCCI Catena 4610.
+The MCCI Catena 4430 Animal Activity Tracker is an accessory for Adafruit Feather-compatible CPU boards such as the Adafruit Feather M0 or the MCCI Catena 4610. As the name suggests, it allows real-time tracking of the activity of research animals (mice, rats, and so forth) in cages. Data can be stored in an SD card and also transmitted over LoRaWAN networks such as The Things Network or Helium. Local accessories such as pellet feeders can also be controlled.
+
+The product is available stand-alone, or built up into complete sensors, from the [MCCI Store](https://store.mcci.com/products/mcci-catena-4430-activity-sensor-wing).
+
+![Picture of 4430 in case](assets/catena4430-black-case.jpg)
 
 With an MCCI Catena 4610 mounted, the assembly looks like this:
 
-![Picture of Catena 4430](assets/Catean4430-with-main-Catena.jpg)
+![Picture of Catena 4430 outside case](assets/Catean4430-with-main-Catena.jpg)
 
 Prior to assembly, the Catena 4430 looks like this:
 
@@ -47,7 +53,7 @@ The Catena 4430 adds the following functions to any compatible Feather-like boar
 
 - Three additional lights (red, green, and blue).
 
-- A GPIO screw terminal with four posts: two I/O signals, power, and ground. The power at the screw terminal can also be turned on and off under software control.
+- A JST XH-4 receptacle (in older units, a screw terminal) with four posts: two I/O signals, power, and ground. The power at the interconnect can be turned on and off under software control.
 
 ## Key classes
 
