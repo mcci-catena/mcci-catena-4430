@@ -283,7 +283,7 @@ cMeasurementLoop::fsmDispatch(
     case State::stAwaitCard:
         if (fEntry)
             {
-            gCatena.SafePrintf("** no SD card and not provisioned!\n");
+            gCatena.SafePrintf("** lorawan not provisioned!\n");
             }
 
         newState = State::stSleeping;
