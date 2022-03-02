@@ -14,7 +14,7 @@ Author:
 */
 
 #include "Catena4430_cMeasurementLoop.h"
-
+#include <TimeLib.h>
 #include <Catena4430.h>
 #include <arduino_lmic.h>
 #include <Catena4430_Sensor.h>
@@ -30,6 +30,8 @@ static constexpr uint8_t kVddPin = D11;
 
 void lptimSleep(uint32_t timeOut);
 uint32_t HAL_AddTick(uint32_t delta);
+
+void user_request_network_time_cb(void *pVoidUserUTCTime, int flagSuccess);
 
 uint32_t timeOut = 200;
 
@@ -90,10 +92,16 @@ void cMeasurementLoop::begin()
         gCatena.SafePrintf("No Si1133 found: check hardware\n");
         }
 
+    // read network time and set correct UTC time in RTC
+    uint32_t userUTCTime; // Seconds since the UTC epoch
+    // Schedule a network time request at the next possible time
+    LMIC_requestNetworkTime(user_request_network_time_cb, &userUTCTime);
+
     // start (or restart) the FSM.
     if (! this->m_running)
         {
         this->m_fFwUpdate = false;
+        this->startTime = millis();
         this->m_exit = false;
         this->m_fsm.init(*this, &cMeasurementLoop::fsmDispatch);
         }
@@ -244,6 +252,15 @@ cMeasurementLoop::fsmDispatch(
 
             // calculate the new sleep interval.
             this->updateTxCycleTime();
+
+            uint32_t currentTimeSec;
+            currentTimeSec = uint32_t(millis() - this->startTime) / 1000;
+            if (currentTimeSec > m_rtcSetSec)
+                {
+                uint32_t userUTCTime; // Seconds since the UTC epoch
+                // Schedule a network time request at the next possible time
+                LMIC_requestNetworkTime(user_request_network_time_cb, &userUTCTime);
+                }
             }
         break;
 
@@ -552,6 +569,62 @@ void cMeasurementLoop::poll()
 
     if (!(this->m_fUsbPower) && !(this->m_fFwUpdate) && !(os_queryTimeCriticalJobs(ms2osticks(timeOut))))
         lptimSleep(timeOut);
+    }
+
+void user_request_network_time_cb(void *pVoidUserUTCTime, int flagSuccess) {
+    // Explicit conversion from void* to uint32_t* to avoid compiler errors
+    uint32_t *pUserUTCTime = (uint32_t *) pVoidUserUTCTime;
+
+    // A struct that will be populated by LMIC_getNetworkTimeReference.
+    // It contains the following fields:
+    //  - tLocal: the value returned by os_GetTime() when the time
+    //            request was sent to the gateway, and
+    //  - tNetwork: the seconds between the GPS epoch and the time
+    //              the gateway received the time request
+    lmic_time_reference_t lmicTimeReference;
+
+    if (flagSuccess != 1) {
+        gCatena.SafePrintf("USER CALLBACK: Not a success\n");
+        return;
+        }
+
+    // Populate "lmic_time_reference"
+    flagSuccess = LMIC_getNetworkTimeReference(&lmicTimeReference);
+    if (flagSuccess != 1) {
+        gCatena.SafePrintf("USER CALLBACK: LMIC_getNetworkTimeReference didn't succeed\n");
+        return;
+        }
+
+    // Update userUTCTime, considering the difference between the GPS and UTC
+    // epoch, and the leap seconds
+    *pUserUTCTime = lmicTimeReference.tNetwork + 315964800;
+
+    // Add the delay between the instant the time was transmitted and
+    // the current time
+
+    // Current time, in ticks
+    ostime_t ticksNow = os_getTime();
+    // Time when the request was sent, in ticks
+    ostime_t ticksRequestSent = lmicTimeReference.tLocal;
+    uint32_t requestDelaySec = osticks2ms(ticksNow - ticksRequestSent) / 1000;
+    *pUserUTCTime += requestDelaySec;
+
+    // gDate.setGpsTime((int64_t)*pUserUTCTime);
+    gDate.setCommonTime((int64_t)*pUserUTCTime);
+
+    gCatena.SafePrintf(
+                "The current GPS time is: %04d-%02d-%02d %02d:%02d:%02d\n",
+                gDate.year(), gDate.month(), gDate.day(),
+                gDate.hour(), gDate.minute(), gDate.second()
+                );;
+
+    unsigned errCode;
+    if (! gClock.set(gDate, &errCode))
+        gCatena.SafePrintf("couldn't set clock: %u\n", errCode);
+    else
+        this->m_data.flags |= Flags::NwTime;
+
+    gMeasurementLoop.startTime = millis();
     }
 
 static void setup_lptim(uint32_t msec)

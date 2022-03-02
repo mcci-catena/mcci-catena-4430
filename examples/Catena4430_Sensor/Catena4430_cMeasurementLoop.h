@@ -26,6 +26,7 @@ Author:
 #include <Catena_Led.h>
 #include <Catena_Log.h>
 #include <Catena_Mx25v8035f.h>
+#include <Catena4430_cClockDriver_PCF8523.h>
 #include <Catena_PollableInterface.h>
 #include <Catena_Si1133.h>
 #include <Catena_Timer.h>
@@ -40,8 +41,10 @@ Author:
 #include <cstdint>
 
 extern McciCatena::Catena gCatena;
+extern McciCatena::cDate gDate;
 extern McciCatena::Catena::LoRaWAN gLoRaWAN;
 extern McciCatena::StatusLed gLed;
+extern McciCatena4430::cClockDriver_PCF8523 gClock;
 
 namespace McciCatena4430 {
 
@@ -114,13 +117,13 @@ public:
     enum class Flags : uint8_t
             {
             Vbat = 1 << 0,      // vBat
-            Vcc = 1 << 1,       // system voltage
-            Vbus = 1 << 2,      // Vbus input
-            Boot = 1 << 3,      // boot count
-            TPH = 1 << 4,       // temperature, pressure, humidity
-            Light = 1 << 5,     // light (IR, white, UV)
-            Pellets = 1 << 6,   // Pellet count
-            Activity = 1 << 7,  // Activity (min/max/avg)
+            Vbus = 1 << 1,      // Vbus input
+            Boot = 1 << 2,      // boot count
+            TPH = 1 << 3,       // temperature, pressure, humidity
+            Light = 1 << 4,     // light (IR, white, UV)
+            Pellets = 1 << 5,   // Pellet count
+            Activity = 1 << 6,  // Activity (min/max/avg)
+            NwTime = 1 << 7,    // network time
             };
 
     static constexpr unsigned kMaxActivityEntries = a_kMaxActivityEntries;
@@ -202,7 +205,7 @@ class cMeasurementLoop : public McciCatena::cPollableObject
     {
 public:
     // some parameters
-    static constexpr std::uint8_t kUplinkPort = 2;
+    static constexpr std::uint8_t kUplinkPort = 3;
     static constexpr bool kEnableDeepSleep = false;
     static constexpr unsigned kMaxActivityEntries = 8;
     using MeasurementFormat = cMeasurementFormat22<kMaxActivityEntries>;
@@ -241,6 +244,7 @@ public:
         , m_txCycleSec_Permanent(6 * 60)    // default uplink interval
         , m_txCycleSec(60)                  // initial uplink interval
         , m_txCycleCount(10)                // initial count of fast uplinks
+        , m_rtcSetSec(8 * 60 * 60)          // set RTC time every 8 hours
         , m_DebugFlags(DebugFlags(kError | kTrace))
         , m_ActivityTimerSec(60)            // the activity time sample interval
         {};
@@ -295,6 +299,9 @@ public:
 
     // flag to disable LED
     bool fDisableLED;
+
+    // set start time when network time is being set
+    std::uint32_t startTime;
 
     // initialize measurement FSM.
     void begin();
@@ -479,6 +486,9 @@ private:
     std::uint32_t                   m_txCycleSec;
     std::uint32_t                   m_txCycleCount;
     std::uint32_t                   m_txCycleSec_Permanent;
+
+    // RTC set time control
+    std::uint32_t                   m_rtcSetSec;
 
     // simple timer for timing-out sensors.
     std::uint32_t                   m_timer_start;
