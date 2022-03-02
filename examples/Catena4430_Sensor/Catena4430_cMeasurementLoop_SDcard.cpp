@@ -125,9 +125,9 @@ cMeasurementLoop::checkSdCard()
     }
 
 static const char kHeader[] =
-    "Time,DevEUI,Raw,Vbat,Vsystem,Vbus,BootCount,T,RH,P,Light,"
+    "Time,DevEUI,Raw,Vbat,Vbus,BootCount,T,RH,P,Light,"
     "P[0].delta,P[0].total,P[1].delta,P[1].total,"
-    "Act[7],Act[6],Act[5],Act[4],Act[3],Act[2],Act[1],Act[0]"
+    "Act[7],Act[6],Act[5],Act[4],Act[3],Act[2],Act[1],Act[0],NetworkTime"
     "\n";
 
 bool
@@ -253,11 +253,6 @@ cMeasurementLoop::writeSdCard(
 
             dataFile.print(',');
 
-            if ((mData.flags & Flags::Vcc) != Flags(0))
-                dataFile.print(mData.Vsystem);
-
-            dataFile.print(',');
-
             if ((mData.flags & Flags::Vbus) != Flags(0))
                 dataFile.print(mData.Vbus);
 
@@ -308,6 +303,11 @@ cMeasurementLoop::writeSdCard(
                 if (i > 0)
                     dataFile.print(',');
                 }
+
+            dataFile.print(',');
+
+            if ((mData.flags & Flags::NwTime) != Flags(0))
+                dataFile.print("True");
 
             dataFile.println();
             dataFile.close();

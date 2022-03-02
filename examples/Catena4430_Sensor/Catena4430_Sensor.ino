@@ -127,11 +127,11 @@ void setup()
     setup_printSignOn();
 
     setup_flash();
+    setup_radio();
     setup_download();
     setup_measurement();
     setup_gpio();
     setup_rtc();
-    setup_radio();
     setup_commands();
     setup_start();
     }

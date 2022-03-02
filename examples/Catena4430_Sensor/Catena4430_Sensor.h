@@ -23,6 +23,7 @@ Author:
 #include <Catena_Download.h>
 #include <Catena_Led.h>
 #include <Catena_Mx25v8035f.h>
+#include <Catena_Date.h>
 #include <Catena_Timer.h>
 #include <Catena4430_c4430Gpios.h>
 #include <Catena4430_cPCA9570.h>
@@ -36,6 +37,7 @@ extern  McciCatena4430::cClockDriver_PCF8523    gClock;
 
 extern  McciCatena4430::c4430Gpios              gpio;
 extern  McciCatena::Catena                      gCatena;
+extern McciCatena::cDate                        gDate;
 extern  McciCatena::cTimer                      ledTimer;
 extern  McciCatena::Catena::LoRaWAN             gLoRaWAN;
 extern  McciCatena::StatusLed                   gLed;
