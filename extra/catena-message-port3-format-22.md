@@ -213,14 +213,6 @@ The following input data can be used to test decoders.
 }
 ```
 
-`22 00 00 00 00 02 F8 00`
-
-```json
-{
-  "time": 0,
-  "vSys": -0.5
-}```
-
 `22 00 00 00 00 04 7f ff`
 
 ```json
@@ -329,6 +321,15 @@ The following input data can be used to test decoders.
 }
 ```
 
+`22 00 00 00 00 80`
+
+```json
+{
+  "NwTimw": True,
+  "time": 0
+}
+```
+
 `22 4a d5 06 db ff 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 00 c8 00 64 03 00 19 0a 7c 3d ff ff 7f ff fc 00 74 00 f4 cd`
 
 ```json
@@ -345,6 +346,7 @@ The following input data can be used to test decoders.
   "irradiance": {
     "White": 25
   },
+  "NwTime": True,
   "p": 1017.12,
   "pellets": [
     {
@@ -362,8 +364,7 @@ The following input data can be used to test decoders.
   "tempC": 30,
   "time": 1255474907000,
   "vBat": 2,
-  "vBus": 4.89990234375,
-  "vSys": 3.300048828125
+  "vBus": 4.89990234375
 }
 ```
 
@@ -374,71 +375,71 @@ This repository contains a simple C++ file for generating test vectors.
 Build it from the command line. Using Visual C++:
 
 ```console
-C> cl /EHsc catena-message-port2-format-22-test.cpp
+C> cl /EHsc catena-message-port3-format-22-test.cpp
 Microsoft (R) C/C++ Optimizing Compiler Version 19.16.27031.1 for x64
 Copyright (C) Microsoft Corporation.  All rights reserved.
 
-catena-message-port2-format-22-test.cpp
+catena-message-port3-format-22-test.cpp
 Microsoft (R) Incremental Linker Version 14.16.27031.1
 Copyright (C) Microsoft Corporation.  All rights reserved.
 
-/out:catena-message-port2-format-22-test.exe
-catena-message-port2-format-22-test.obj
+/out:catena-message-port3-format-22-test.exe
+catena-message-port3-format-22-test.obj
 ```
 
 Using GCC or Clang on Linux:
 
 ```bash
-make catena-message-port2-format-22-test
+make catena-message-port3-format-22-test
 ```
 
 (The default make rules should work.)
 
-For usage, read the source or the check the input vector generation file `catena-message-port2-format-22.vec`.
+For usage, read the source or the check the input vector generation file `catena-message-port3-format-22.vec`.
 
 To run it against the test vectors, try:
 
 ```console
-C> catena-message-port2-format-22-test < catena-message-port2-format-22.vec
+C> catena-message-port3-format-22-test < catena-message-port3-format-22.vec
 Time 1255474907 .
 22 4a d5 06 db 00
 length: 6
 Vbat 1.5 .
 22 00 00 00 00 01 18 00
 length: 8
-Vsys -0.5 .
-22 00 00 00 00 02 f8 00
-length: 8
 Vbus 10 .
-22 00 00 00 00 04 7f ff
+22 00 00 00 00 02 7f ff
 length: 8
 Boot 42 .
-22 00 00 00 00 08 2a
+22 00 00 00 00 04 2a
 length: 7
 Env 20 978.5 60 .
-22 00 00 00 00 10 14 00 5f 8f 99 99
+22 00 00 00 00 08 14 00 5f 8f 99 99
 length: 12
 Env 30 1017.1 60 .
-22 00 00 00 00 10 1e 00 63 54 99 99
+22 00 00 00 00 08 1e 00 63 54 99 99
 length: 12
 Light 1.23401e+06 .
-22 00 00 00 00 20 ff ff
+22 00 00 00 00 10 ff ff
 length: 8
 Activity [ ] .
-22 00 00 00 00 80
+22 00 00 00 00 40
 length: 6
 Activity [ 0.27 ] .
-22 00 00 00 00 80 74 52
+22 00 00 00 00 40 74 52
 length: 8
 Activity [ 0.53 -1 1 -0.5 0.25 -0.3 ] .
-22 00 00 00 00 80 7c 3d ff ff 7f ff fc 00 74 00 f4 cd
+22 00 00 00 00 40 7c 3d ff ff 7f ff fc 00 74 00 f4 cd
 length: 18
 Pellets 100 3 25 10 .
-22 00 00 00 00 40 00 64 03 00 19 0a
+22 00 00 00 00 20 00 64 03 00 19 0a
 length: 12
-Time 1255474907 Vbat 2 Vsys 3.3 Vbus 4.9 Boot 42 Env 30 1017.1 60 Light 1.23401e+06 Pellets 100 3 25 10 Activity [ 0.53 -1 1 -0.5 0.25 -0.3 ] .
-22 4a d5 06 db ff 20 00 34 cd 4e 66 2a 1e 00 63 54 99 99 ff ff 00 64 03 00 19 0a 7c 3d ff ff 7f ff fc 00 74 00 f4 cd
-length: 39
+NwTime True .
+22 00 00 00 00 80
+length: 6
+Time 1255474907 Vbat 2 Vbus 4.9 Boot 42 Env 30 1017.1 60 Light 1.23401e+06 Pellets 100 3 25 10 Activity [ 0.53 -1 1 -0.5 0.25 -0.3 ] NwTime True .
+22 4a d5 06 db ff 20 00 4e 66 2a 1e 00 63 54 99 99 ff ff 00 64 03 00 19 0a 7c 3d ff ff 7f ff fc 00 74 00 f4 cd
+length: 37
 
 C>
 ```
@@ -449,12 +450,12 @@ The repository contains a generic script that decodes messages in this format, f
 
 You can get the latest version on GitHub:
 
-- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port1-22-decoder-ttn.js), or
-- [view it](https://github.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port1-22-decoder-ttn.js).
+- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port3-22-decoder-ttn.js), or
+- [view it](https://github.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port3-22-decoder-ttn.js).
 
 ## Node-RED Decoding Script
 
 A Node-RED script to decode this data is part of this repository. You can download the latest version from GitHub:
 
-- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port1-22-decoder-node-red.js), or
-- [view it](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port1-22-decoder-node-red.js).
+- [in raw form](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/master/extra/catena-message-port3-22-decoder-node-red.js), or
+- [view it](https://raw.githubusercontent.com/mcci-catena/MCCI-Catena-4430/blob/master/extra/catena-message-port3-22-decoder-node-red.js).
