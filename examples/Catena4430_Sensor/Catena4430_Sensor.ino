@@ -20,6 +20,7 @@ Author:
 #include <arduino_lmic.h>
 #include <Catena_Timer.h>
 #include <Catena4430.h>
+#include <Catena_Date.h>
 #include <Catena4430_cPCA9570.h>
 #include <Catena4430_c4430Gpios.h>
 #include <Catena4430_cPIRdigital.h>
@@ -58,6 +59,7 @@ cClockDriver_PCF8523    gClock      { &Wire };
 
 c4430Gpios gpio     { &i2cgpio };
 Catena gCatena;
+cDate gDate;
 cTimer ledTimer;
 Catena::LoRaWAN gLoRaWAN;
 StatusLed gLed (Catena::PIN_STATUS_LED);

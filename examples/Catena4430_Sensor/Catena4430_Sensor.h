@@ -37,7 +37,7 @@ extern  McciCatena4430::cClockDriver_PCF8523    gClock;
 
 extern  McciCatena4430::c4430Gpios              gpio;
 extern  McciCatena::Catena                      gCatena;
-extern McciCatena::cDate                        gDate;
+extern  McciCatena::cDate                       gDate;
 extern  McciCatena::cTimer                      ledTimer;
 extern  McciCatena::Catena::LoRaWAN             gLoRaWAN;
 extern  McciCatena::StatusLed                   gLed;

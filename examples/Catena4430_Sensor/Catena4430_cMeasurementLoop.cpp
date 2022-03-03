@@ -94,6 +94,8 @@ void cMeasurementLoop::begin()
 
     // read network time and set correct UTC time in RTC
     uint32_t userUTCTime; // Seconds since the UTC epoch
+    this->fNwTimeSet = false;
+
     // Schedule a network time request at the next possible time
     LMIC_requestNetworkTime(user_request_network_time_cb, &userUTCTime);
 
@@ -230,6 +232,13 @@ cMeasurementLoop::fsmDispatch(
         if (fEntry)
             {
             TxBuffer_t b;
+
+            if (this->fNwTimeSet)
+                {
+                this->m_data.flags |= Flags::NwTime;
+                this->fNwTimeSet = false;
+                }
+
             this->fillTxBuffer(b, this->m_data);
             this->m_FileData = this->m_data;
 
@@ -616,13 +625,13 @@ void user_request_network_time_cb(void *pVoidUserUTCTime, int flagSuccess) {
                 "The current GPS time is: %04d-%02d-%02d %02d:%02d:%02d\n",
                 gDate.year(), gDate.month(), gDate.day(),
                 gDate.hour(), gDate.minute(), gDate.second()
-                );;
+                );
 
     unsigned errCode;
     if (! gClock.set(gDate, &errCode))
         gCatena.SafePrintf("couldn't set clock: %u\n", errCode);
     else
-        this->m_data.flags |= Flags::NwTime;
+        gMeasurementLoop.fNwTimeSet = true;
 
     gMeasurementLoop.startTime = millis();
     }

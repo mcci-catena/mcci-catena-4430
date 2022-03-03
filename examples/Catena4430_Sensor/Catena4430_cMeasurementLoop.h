@@ -300,6 +300,9 @@ public:
     // flag to disable LED
     bool fDisableLED;
 
+    // set flag if Network time set to RTC
+    bool fNwTimeSet;
+
     // set start time when network time is being set
     std::uint32_t startTime;
 
