@@ -142,13 +142,13 @@ cMeasurementLoop::writeSdCard(
 
     if (! mData.DateTime.isValid())
         {
-        gCatena.SafePrintf("measurement time not valid\n");
+        gCatena.SafePrintf("RTC not set, not storing data!\n");
         return false;
         }
 
     fResult = this->checkSdCard();
     if (! fResult)
-        gCatena.SafePrintf("checkSdCard() failed\n");
+        gCatena.SafePrintf("** SD card not detected!\n");
 
     if (fResult)
         {
