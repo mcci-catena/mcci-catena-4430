@@ -63,7 +63,7 @@ fields.message_raw = toHexBuffer(msg.payload_raw);
 
 // array of names of items in msg.payload, each match to be copied as a value.
 var field_keys = [
-    "counter", "Vbat", "Vbus", "Vsys", "boot", "tempC", "tDewC", "tHeatIndexC", "p", "p0", "rh", "irradiance", "pellets", "activity", "nwTime"
+    "counter", "Vbat", "Vbus", "Vsys", "boot", "tempC", "tDewC", "tHeatIndexC", "p", "p0", "rh", "irradiance", "pellets", "activity"
 ];
 
 // array of names of items in msg.payload, each match to be copied as a tag
