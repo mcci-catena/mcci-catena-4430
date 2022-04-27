@@ -117,13 +117,13 @@ public:
     enum class Flags : uint8_t
             {
             Vbat = 1 << 0,      // vBat
-            Vbus = 1 << 1,      // Vbus input
-            Boot = 1 << 2,      // boot count
-            TPH = 1 << 3,       // temperature, pressure, humidity
-            Light = 1 << 4,     // light (IR, white, UV)
-            Pellets = 1 << 5,   // Pellet count
-            Activity = 1 << 6,  // Activity (min/max/avg)
-            NwTime = 1 << 7,    // network time
+            Vcc = 1 << 1,       // system voltage
+            Vbus = 1 << 2,      // Vbus input
+            Boot = 1 << 3,      // boot count
+            TPH = 1 << 4,       // temperature, pressure, humidity
+            Light = 1 << 5,     // light (IR, white, UV)
+            Pellets = 1 << 6,   // Pellet count
+            Activity = 1 << 7,  // Activity (min/max/avg)
             };
 
     static constexpr unsigned kMaxActivityEntries = a_kMaxActivityEntries;
@@ -205,7 +205,8 @@ class cMeasurementLoop : public McciCatena::cPollableObject
     {
 public:
     // some parameters
-    static constexpr std::uint8_t kUplinkPort = 3;
+    static constexpr std::uint8_t kUplinkPort = 2;
+    static constexpr std::uint8_t kUplinkPortwithNwTime = 3;
     static constexpr bool kEnableDeepSleep = false;
     static constexpr unsigned kMaxActivityEntries = 8;
     using MeasurementFormat = cMeasurementFormat22<kMaxActivityEntries>;

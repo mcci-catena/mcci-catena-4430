@@ -233,12 +233,6 @@ cMeasurementLoop::fsmDispatch(
             {
             TxBuffer_t b;
 
-            if (this->fNwTimeSet)
-                {
-                this->m_data.flags |= Flags::NwTime;
-                this->fNwTimeSet = false;
-                }
-
             this->fillTxBuffer(b, this->m_data);
             this->m_FileData = this->m_data;
 
@@ -498,7 +492,18 @@ void cMeasurementLoop::startTransmission(
     this->m_txpending = true;
     this->m_txcomplete = this->m_txerr = false;
 
-    if (! gLoRaWAN.SendBuffer(b.getbase(), b.getn(), sendBufferDoneCb, (void *)this, fConfirmed, kUplinkPort))
+    std::uint8_t uplinkPort;
+    if (this->fNwTimeSet)
+        {
+        uplinkPort = kUplinkPortwithNwTime;
+        this->fNwTimeSet = false;
+        }
+    else
+        {
+        uplinkPort = kUplinkPort;
+        }
+
+    if (! gLoRaWAN.SendBuffer(b.getbase(), b.getn(), sendBufferDoneCb, (void *)this, fConfirmed, uplinkPort))
         {
         // uplink wasn't launched.
         this->m_txcomplete = true;
