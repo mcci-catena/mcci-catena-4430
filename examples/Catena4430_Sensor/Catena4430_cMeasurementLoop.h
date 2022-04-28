@@ -26,6 +26,7 @@ Author:
 #include <Catena_Led.h>
 #include <Catena_Log.h>
 #include <Catena_Mx25v8035f.h>
+#include <Catena4430_cClockDriver_PCF8523.h>
 #include <Catena_PollableInterface.h>
 #include <Catena_Si1133.h>
 #include <Catena_Timer.h>
@@ -40,8 +41,10 @@ Author:
 #include <cstdint>
 
 extern McciCatena::Catena gCatena;
+extern McciCatena::cDate gDate;
 extern McciCatena::Catena::LoRaWAN gLoRaWAN;
 extern McciCatena::StatusLed gLed;
+extern McciCatena4430::cClockDriver_PCF8523 gClock;
 
 namespace McciCatena4430 {
 
@@ -203,6 +206,7 @@ class cMeasurementLoop : public McciCatena::cPollableObject
 public:
     // some parameters
     static constexpr std::uint8_t kUplinkPort = 2;
+    static constexpr std::uint8_t kUplinkPortwithNwTime = 3;
     static constexpr bool kEnableDeepSleep = false;
     static constexpr unsigned kMaxActivityEntries = 8;
     using MeasurementFormat = cMeasurementFormat22<kMaxActivityEntries>;
@@ -241,6 +245,7 @@ public:
         , m_txCycleSec_Permanent(6 * 60)    // default uplink interval
         , m_txCycleSec(60)                  // initial uplink interval
         , m_txCycleCount(10)                // initial count of fast uplinks
+        , m_rtcSetSec(8 * 60 * 60)          // set RTC time every 8 hours
         , m_DebugFlags(DebugFlags(kError | kTrace))
         , m_ActivityTimerSec(60)            // the activity time sample interval
         {};
@@ -295,6 +300,12 @@ public:
 
     // flag to disable LED
     bool fDisableLED;
+
+    // set flag if Network time set to RTC
+    bool fNwTimeSet;
+
+    // set start time when network time is being set
+    std::uint32_t startTime;
 
     // initialize measurement FSM.
     void begin();
@@ -479,6 +490,9 @@ private:
     std::uint32_t                   m_txCycleSec;
     std::uint32_t                   m_txCycleCount;
     std::uint32_t                   m_txCycleSec_Permanent;
+
+    // RTC set time control
+    std::uint32_t                   m_rtcSetSec;
 
     // simple timer for timing-out sensors.
     std::uint32_t                   m_timer_start;

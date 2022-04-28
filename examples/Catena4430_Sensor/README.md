@@ -2,6 +2,8 @@
 
 This "example" sketch is actually a fully implemented sensor that uses a 4610 + 4430 to make a mouse/rat activity tracker with LoRaWAN&reg; backhaul and local SD card data storage. You can learn more about this project at [https://mouserat.org](mouserat.org).
 
+This sketch also includes the feature of getting the network time and configuring the RTC.
+
 Data is acquired continuously driven by the polling loop (in Catena4430_cMeasurementLoop.cpp). Various timers cause the data to be sampled. The main timer fires nominally every six minutes, and causes a sample to be taken of the data for the last 6 minutes. The data is then uplinked via LoRaWAN (if provisioned), and written to the SD card (if time is set).
 
 ## Changing SD Cards While Operating
